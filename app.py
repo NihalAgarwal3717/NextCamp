@@ -880,6 +880,21 @@ def get_cctv_incident():
 def get_events():
     return jsonify(CAMPUS_EVENTS)
 
+@app.route("/api/dashboard/stats", methods=["GET"])
+def get_dashboard_stats():
+    """Returns summarized stats for dashboard monitoring."""
+    resolved_count = sum(1 for t in TICKETS if t.get("status") == "Resolved")
+    return jsonify({
+        "total_tickets": len(TICKETS),
+        "resolved_tickets": resolved_count,
+        "active_workers": len(WORKERS),
+        "total_reviews": len(WORKER_REVIEWS),
+        "student_status": STUDENT_PROFILE.get("status", "Good Standing 🟢"),
+        "student_reputation": STUDENT_PROFILE.get("reputation", 4.7),
+        "student_points": STUDENT_PROFILE.get("reputation_points", 94),
+        "pending_fines": STUDENT_PROFILE.get("fine_amount", 0)
+    })
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
