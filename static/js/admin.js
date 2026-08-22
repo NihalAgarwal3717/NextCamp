@@ -446,12 +446,233 @@ async function adminResolveTicket(ticketId) {
 
 
 // =============================================================================
+// USER MANAGEMENT (VIEW, ADD, TOGGLE ACTIVE STATUS, DELETE)
+// =============================================================================
+
+let allUsersCache = [];
+
+async function fetchAdminUsers() {
+    const tbody = document.getElementById('usersTableBody');
+    if (!tbody) return;
+
+    try {
+        const res = await fetch('/api/admin/users', {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        if (!res.ok) {
+            if (res.status === 401) {
+                console.warn('Admin session required.');
+            }
+            return;
+        }
+        allUsersCache = await res.json();
+
+        if (!allUsersCache || allUsersCache.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="py-8 text-center text-xs text-slate-400">
+                        No registered campus users found.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = allUsersCache.map(u => {
+            const roleBadge = u.role === 'Admin'
+                ? 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30'
+                : 'bg-teal-500/15 text-teal-300 border-teal-500/30';
+
+            const isActive = u.is_active !== 0;
+            const statusBadge = isActive
+                ? '<span class="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">Active 🟢</span>'
+                : '<span class="px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-300 border border-rose-500/30 text-[10px] font-bold">Deactivated ⛔</span>';
+
+            const toggleBtnText = isActive ? 'Deactivate' : 'Activate';
+            const toggleBtnClass = isActive
+                ? 'bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border-rose-500/30'
+                : 'bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border-emerald-500/30';
+            const toggleIcon = isActive ? 'user-x' : 'user-check';
+
+            return `
+                <tr class="hover:bg-slate-800/40 transition-colors">
+                    <td class="py-3.5 px-4">
+                        <div class="flex items-center space-x-2.5">
+                            <div class="w-8 h-8 rounded-xl bg-slate-800 border border-slate-700 text-cyan-400 flex items-center justify-center font-bold text-xs">
+                                ${u.name ? u.name.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase() : 'U'}
+                            </div>
+                            <div>
+                                <span class="font-bold text-white block">${u.name}</span>
+                                <span class="font-mono text-[10px] text-slate-400">ID: #${u.id}</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-3.5 px-4 font-mono text-slate-300 text-[11px]">
+                        ${u.email}
+                    </td>
+                    <td class="py-3.5 px-4 font-mono text-slate-300 text-[11px]">
+                        ${u.student_id || 'N/A'}
+                    </td>
+                    <td class="py-3.5 px-4 text-center">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold border ${roleBadge}">
+                            ${u.role}
+                        </span>
+                    </td>
+                    <td class="py-3.5 px-4 text-center">
+                        ${statusBadge}
+                    </td>
+                    <td class="py-3.5 px-4 text-right">
+                        <div class="inline-flex items-center space-x-1.5">
+                            <button onclick="toggleUserStatus(${u.id}, '${u.name.replace(/'/g, "\\'")}', ${isActive ? 1 : 0})" title="${toggleBtnText} User"
+                                class="px-2.5 py-1 rounded-lg border text-xs font-semibold flex items-center space-x-1 transition-all ${toggleBtnClass}">
+                                <i data-lucide="${toggleIcon}" class="w-3.5 h-3.5"></i>
+                                <span>${toggleBtnText}</span>
+                            </button>
+                            <button onclick="deleteAdminUser(${u.id}, '${u.name.replace(/'/g, "\\'")}', '${u.email}')" title="Delete User"
+                                class="p-1 rounded-lg bg-slate-800 hover:bg-rose-950/50 text-slate-400 hover:text-rose-400 transition-colors">
+                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        if (window.lucide) lucide.createIcons();
+    } catch (err) {
+        console.error('Error fetching admin users:', err);
+    }
+}
+
+function openAddUserModal() {
+    const modal = document.getElementById('addUserModal');
+    if (modal) modal.classList.remove('hidden');
+}
+
+function closeAddUserModal() {
+    const modal = document.getElementById('addUserModal');
+    if (modal) modal.classList.add('hidden');
+    const form = document.getElementById('addUserForm');
+    if (form) form.reset();
+}
+
+async function submitAddUser(event) {
+    event.preventDefault();
+
+    const name = document.getElementById('addUserName').value.trim();
+    const email = document.getElementById('addUserEmail').value.trim().toLowerCase();
+    const studentId = document.getElementById('addUserStudentId').value.trim();
+    const role = document.getElementById('addUserRole').value;
+    const password = document.getElementById('addUserPassword').value;
+
+    if (!name || !email || !password) {
+        showToast('Name, email, and password are required.', 'warning');
+        return;
+    }
+
+    if (!email.endsWith('@sst.scaler.com')) {
+        showToast('Email must strictly end with @sst.scaler.com', 'error');
+        return;
+    }
+
+    try {
+        const res = await fetch('/api/admin/users', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({
+                name: name,
+                email: email,
+                student_id: studentId,
+                role: role,
+                password: password
+            })
+        });
+
+        let data = {};
+        const text = await res.text();
+        try {
+            data = JSON.parse(text);
+        } catch (e) {
+            console.error('Non-JSON response from server:', text);
+        }
+
+        if (res.ok) {
+            showToast(data.message || `User '${name}' created successfully!`, 'success');
+            closeAddUserModal();
+            fetchAdminUsers();
+        } else {
+            const errorMsg = data.error || (res.status === 401 ? 'Administrator authentication required. Please log in again.' : `Error (${res.status}): Failed to create user.`);
+            showToast(errorMsg, 'error');
+            if (res.status === 401) {
+                setTimeout(() => { window.location.href = '/login?next=/admin'; }, 2000);
+            }
+        }
+    } catch (err) {
+        console.error('Error adding user:', err);
+        showToast('Network error while creating user: ' + err.message, 'error');
+    }
+}
+
+async function toggleUserStatus(userId, userName, currentActive) {
+    try {
+        const res = await fetch(`/api/admin/users/${userId}/toggle-status`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+        let data = {};
+        try { data = await res.json(); } catch (e) {}
+
+        if (res.ok) {
+            showToast(data.message || `User status updated!`, 'info');
+            fetchAdminUsers();
+        } else {
+            showToast(data.error || 'Failed to update user status.', 'error');
+        }
+    } catch (err) {
+        console.error('Error toggling user status:', err);
+    }
+}
+
+async function deleteAdminUser(userId, userName, userEmail) {
+    if (!confirm(`Are you sure you want to delete user '${userName}' (${userEmail})? This action cannot be undone.`)) {
+        return;
+    }
+
+    try {
+        const res = await fetch(`/api/admin/users/${userId}`, {
+            method: 'DELETE',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        let data = {};
+        try { data = await res.json(); } catch (e) {}
+
+        if (res.ok) {
+            showToast(data.message || `User deleted successfully!`, 'success');
+            fetchAdminUsers();
+        } else {
+            showToast(data.error || 'Failed to delete user.', 'error');
+        }
+    } catch (err) {
+        console.error('Error deleting user:', err);
+    }
+}
+
+
+// =============================================================================
 // INITIALIZATION
 // =============================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
     fetchAdminStudentStatus();
+    fetchAdminUsers();
     fetchWorkers();
     fetchWorkerReviews();
     fetchAdminTickets();
 });
+

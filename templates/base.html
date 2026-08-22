@@ -48,7 +48,7 @@
                 
                 <!-- Brand / Logo + Tagline -->
                 <div class="flex items-center space-x-3.5">
-                    <a href="/" class="flex items-center space-x-3 group">
+                    <a href="{% if session.get('role') == 'Admin' %}/admin{% else %}/{% endif %}" class="flex items-center space-x-3 group">
                         <div class="w-10 h-10 md:w-11 md:h-11 rounded-2xl bg-gradient-to-tr from-teal-400 via-teal-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-teal-500/20 group-hover:scale-105 transition-transform text-slate-950 font-black text-xl">
                             ⚡
                         </div>
@@ -64,17 +64,22 @@
                     </a>
                 </div>
 
-                <!-- Navigation Portal Links -->
+                <!-- Navigation Portal Links (Strict Role-Based Filtering) -->
+                {% if session.get('role') == 'Admin' %}
                 <div class="hidden md:flex items-center space-x-2 bg-slate-900/90 border border-slate-800/90 p-1 rounded-2xl">
-                    <a href="/" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 {% if request.path == '/' %}bg-teal-500/20 text-teal-300 border border-teal-500/30{% else %}text-slate-400 hover:text-white{% endif %}">
-                        <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
-                        <span>Student Portal</span>
-                    </a>
-                    <a href="/admin" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 {% if request.path == '/admin' %}bg-indigo-500/20 text-indigo-300 border border-indigo-500/30{% else %}text-slate-400 hover:text-white{% endif %}">
+                    <a href="/admin" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
                         <i data-lucide="shield-check" class="w-4 h-4"></i>
                         <span>Admin Hub & CCTV</span>
                     </a>
                 </div>
+                {% else %}
+                <div class="hidden md:flex items-center space-x-2 bg-slate-900/90 border border-slate-800/90 p-1 rounded-2xl">
+                    <a href="/" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 bg-teal-500/20 text-teal-300 border border-teal-500/30">
+                        <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                        <span>Student Portal</span>
+                    </a>
+                </div>
+                {% endif %}
 
                 <!-- User Profile Badge & Logout -->
                 <div class="flex items-center space-x-3">
@@ -83,8 +88,15 @@
                     <div class="hidden sm:flex items-center space-x-2 bg-slate-900/80 border border-slate-800 px-3 py-1.5 rounded-2xl">
                         <!-- User Name -->
                         <span id="headerUserName" class="text-xs font-bold text-slate-200">
-                            {{ session.get('name', 'Sameer Verma') }}
+                            {{ session.get('name', 'Campus User') }}
                         </span>
+                        {% if session.get('role') == 'Admin' %}
+                        <span class="text-slate-600">•</span>
+                        <!-- Admin Badge -->
+                        <span id="headerUserBadge" class="text-[11px] font-bold text-indigo-300 bg-indigo-500/15 border border-indigo-500/30 px-2 py-0.5 rounded-lg">
+                            Campus Admin
+                        </span>
+                        {% else %}
                         <span class="text-slate-600">•</span>
                         <!-- Reputation Score -->
                         <span id="headerReputationScore" class="text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-lg flex items-center gap-1">
@@ -94,14 +106,21 @@
                         <span id="headerUserBadge" class="text-[11px] font-bold text-teal-300 bg-teal-500/15 border border-teal-500/30 px-2 py-0.5 rounded-lg">
                             {{ session.get('badge', 'Tech Support Pro') }}
                         </span>
+                        {% endif %}
                     </div>
 
-                    <!-- Mobile Link Switcher -->
+                    <!-- Mobile Navigation Link -->
                     <div class="flex md:hidden items-center space-x-1">
-                        {% if request.path == '/' %}
-                        <a href="/admin" class="p-2 rounded-xl bg-slate-900 border border-slate-800 text-indigo-400 text-xs font-bold">Admin</a>
+                        {% if session.get('role') == 'Admin' %}
+                        <a href="/admin" class="p-2 rounded-xl bg-slate-900 border border-slate-800 text-indigo-400 text-xs font-bold flex items-center gap-1">
+                            <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
+                            <span>Admin</span>
+                        </a>
                         {% else %}
-                        <a href="/" class="p-2 rounded-xl bg-slate-900 border border-slate-800 text-teal-400 text-xs font-bold">Student</a>
+                        <a href="/" class="p-2 rounded-xl bg-slate-900 border border-slate-800 text-teal-400 text-xs font-bold flex items-center gap-1">
+                            <i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i>
+                            <span>Student</span>
+                        </a>
                         {% endif %}
                     </div>
 
