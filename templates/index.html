@@ -1,0 +1,516 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-8">
+
+    <!-- ========================================================================= -->
+    <!-- SECTION 1: ACCOUNTABILITY STATUS & STUDENT PROFILE -->
+    <!-- ========================================================================= -->
+    <div class="bg-slate-900/80 border border-slate-800/90 rounded-3xl p-5 md:p-6 shadow-xl backdrop-blur-md flex flex-col md:flex-row md:items-center justify-between gap-4 relative overflow-hidden">
+        <div class="flex items-center space-x-3.5">
+            <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-teal-500 to-indigo-500 flex items-center justify-center font-black text-slate-950 text-lg shadow-lg shadow-teal-500/20">
+                SV
+            </div>
+            <div>
+                <div class="flex items-center space-x-2">
+                    <h3 id="studentProfileName" class="text-base font-bold text-white">{{ session.get('name', 'Sameer Verma') }}</h3>
+                    <span id="studentStandingBadge" class="px-3 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                        Good Standing 🟢
+                    </span>
+                </div>
+                <div class="flex items-center space-x-2 text-xs text-slate-400 mt-0.5">
+                    <span id="studentProfileRoll">SST-2023-CS042 • Hostel Block B, Room 204</span>
+                    <span>•</span>
+                    <span class="text-amber-400 font-semibold flex items-center gap-1">
+                        <span id="studentReputationPoints">94</span> Rep Points
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Accountability Status & Pending Fines Widget -->
+        <div class="flex items-center space-x-4 bg-slate-950/80 px-4 py-2.5 rounded-2xl border border-slate-800/80">
+            <div>
+                <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Pending Fines</p>
+                <h4 id="studentFineAmount" class="text-lg font-bold font-mono text-emerald-400">₹0</h4>
+            </div>
+            <button onclick="payStudentFine()" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 font-semibold transition-colors border border-slate-700">
+                Pay / Clear Fine
+            </button>
+        </div>
+    </div>
+
+    <!-- DYNAMIC DISCIPLINARY WARNING BANNER (When Fine is Issued / Status Action Required) -->
+    <div id="studentFineBanner" class="hidden p-4 rounded-2xl bg-rose-950/80 border border-rose-500/50 text-xs text-rose-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fadeIn shadow-xl shadow-rose-950/40">
+        <div class="flex items-center space-x-2.5">
+            <i data-lucide="alert-octagon" class="w-5 h-5 text-rose-400 flex-shrink-0"></i>
+            <span id="studentFineBannerText"><b>⚠️ Disciplinary Notice:</b> An administrative fine of ₹500 has been issued. Status: Action Required 🔴.</span>
+        </div>
+        <button onclick="payStudentFine()" class="px-3.5 py-1.5 rounded-xl bg-rose-500 hover:bg-rose-400 text-slate-950 font-bold text-xs shadow-lg transition-all flex-shrink-0 self-start sm:self-auto">
+            Resolve Fine Now
+        </button>
+    </div>
+
+
+    <!-- ========================================================================= -->
+    <!-- SECTION 2: HIGH-PRIORITY RED ALERT BOX (CRITICAL CAMPUS NOTICES) -->
+    <!-- ========================================================================= -->
+    <section class="space-y-3">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <span class="flex h-3 w-3 relative">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-3 w-3 bg-rose-500"></span>
+                </span>
+                <h2 class="text-base font-bold tracking-tight text-white flex items-center gap-2">
+                    Critical Campus Alerts
+                    <span class="text-xs font-normal text-slate-400 font-mono">(Real-time high-priority notices)</span>
+                </h2>
+            </div>
+            <button onclick="fetchAlerts()" class="text-xs text-slate-400 hover:text-teal-400 flex items-center space-x-1 transition-colors">
+                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                <span>Refresh</span>
+            </button>
+        </div>
+
+        <!-- High Priority RED Alert Box -->
+        <div id="alertsContainer" class="space-y-3">
+            <div class="p-5 rounded-2xl bg-gradient-to-r from-rose-950/90 to-red-950/80 border-2 border-rose-500/60 shadow-2xl shadow-rose-950/40 relative overflow-hidden">
+                <div class="flex items-start space-x-3.5">
+                    <div class="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-400 border border-rose-500/40 flex items-center justify-center flex-shrink-0 animate-pulse">
+                        <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+                    </div>
+                    <div class="space-y-1">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-500 text-slate-950 uppercase tracking-wide">
+                                URGENT NOTICE
+                            </span>
+                            <h3 class="text-sm font-bold text-white">Class Rescheduled — CS302 Advanced Algorithms</h3>
+                            <span class="text-xs text-rose-300/80">• Today, 1:45 PM</span>
+                        </div>
+                        <p class="text-xs text-rose-200/90 leading-relaxed">
+                            CS302 class scheduled for 2:00 PM in Classroom 204 has been moved to <b>Innovation Lab 4</b> due to emergency AC maintenance. Attendance is mandatory.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+    <!-- ========================================================================= -->
+    <!-- SECTION 3: REPORT PROBLEM FORM & ACTIVE PROBLEM TICKETS -->
+    <!-- ========================================================================= -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        
+        <!-- Left Column: Report Problem Panel / Trigger (5 cols) -->
+        <div class="lg:col-span-5 bg-slate-900/70 border border-slate-800/90 rounded-3xl p-6 md:p-7 shadow-2xl backdrop-blur-md relative overflow-hidden">
+            <div class="flex items-center justify-between mb-5">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-teal-500/20 text-teal-400 border border-teal-500/30 flex items-center justify-center">
+                        <i data-lucide="file-plus-2" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-white tracking-tight">Report a Problem</h3>
+                        <p class="text-xs text-slate-400">Smart allocation automatically picks the top-rated solver</p>
+                    </div>
+                </div>
+                <!-- Open Modal Button for dedicated modal workflow -->
+                <button onclick="openReportModal()" title="Open in Modal Window" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-teal-300 text-xs flex items-center gap-1 transition-all border border-slate-700">
+                    <i data-lucide="maximize-2" class="w-3.5 h-3.5"></i>
+                    <span class="hidden sm:inline">Modal</span>
+                </button>
+            </div>
+
+            <!-- Quick Pre-fill test buttons -->
+            <div class="mb-4 bg-slate-950/60 border border-slate-800/80 rounded-xl p-2.5">
+                <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5 flex items-center gap-1">
+                    <i data-lucide="sparkles" class="w-3.5 h-3.5 text-teal-400"></i>
+                    <span>Quick Test Scenarios:</span>
+                </p>
+                <div class="flex flex-wrap gap-1.5 text-xs">
+                    <button type="button" onclick="fillProblem('Electrical', 'Hostel Block B, Room 204', 'Switchboard spark on fan toggle', 'High')" class="px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-teal-300 font-medium transition-all text-[11px] border border-teal-500/20">
+                        ⚡ Electrical &rarr; Ravi (⭐ 4.9)
+                    </button>
+                    <button type="button" onclick="fillProblem('Hardware', 'Innovation Lab 2', 'Broken monitor mount clamp', 'Medium')" class="px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-amber-300 font-medium transition-all text-[11px] border border-amber-500/20">
+                        🔧 Hardware &rarr; Amit (⭐ 4.8)
+                    </button>
+                    <button type="button" onclick="fillProblem('IT', 'Library Reading Room', 'Wi-Fi AP dropped packet rate', 'High')" class="px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-indigo-300 font-medium transition-all text-[11px] border border-indigo-500/20">
+                        📶 IT &rarr; Priya (⭐ 4.95)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Inline Problem Form -->
+            <form id="reportProblemForm" onsubmit="submitReportProblem(event)" class="space-y-4">
+                <!-- Location Field -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Location *</label>
+                    <input type="text" id="reportLocation" required placeholder="e.g. Hostel Block B, Room 204 or Classroom 204"
+                        value="Hostel Block B, Room 204"
+                        class="w-full bg-slate-950/90 border border-slate-700/80 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 outline-none">
+                </div>
+
+                <!-- Problem Category (Electrical, IT, Hardware) & Urgency -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">Problem Category *</label>
+                        <select id="reportCategory" required
+                            class="w-full bg-slate-950/90 border border-slate-700/80 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 rounded-xl px-3 py-2.5 text-xs text-slate-100 outline-none cursor-pointer">
+                            <option value="Electrical">⚡ Electrical (Ravi ⭐4.9)</option>
+                            <option value="IT">📶 IT (Priya ⭐4.95)</option>
+                            <option value="Hardware">🔧 Hardware (Amit ⭐4.8)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">Urgency Level *</label>
+                        <select id="reportUrgency" required
+                            class="w-full bg-slate-950/90 border border-slate-700/80 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 rounded-xl px-3 py-2.5 text-xs text-slate-100 outline-none cursor-pointer">
+                            <option value="High">🟠 High (Urgent Attention)</option>
+                            <option value="Critical">🔴 Critical (Immediate Hazard)</option>
+                            <option value="Medium">🟡 Medium (Standard)</option>
+                            <option value="Low">🟢 Low (Minor)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Description -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Description *</label>
+                    <textarea id="reportDescription" rows="3" required placeholder="Detail the issue symptoms, safety risks, or observations..."
+                        class="w-full bg-slate-950/90 border border-slate-700/80 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 rounded-xl px-3.5 py-2 text-xs text-slate-100 placeholder-slate-500 outline-none">Switchboard sparked when turning on ceiling fan in Room 204.</textarea>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" id="btnSubmitProblem"
+                    class="w-full py-3 px-4 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-slate-950 font-bold rounded-xl shadow-lg shadow-teal-500/25 flex items-center justify-center space-x-2 transition-all transform active:scale-[0.98] text-xs">
+                    <i data-lucide="send" class="w-4 h-4"></i>
+                    <span>Submit & Auto-Assign Solver</span>
+                </button>
+            </form>
+
+            <!-- Dynamic Result Card -->
+            <div id="assignmentResultCard" class="hidden mt-4 p-4 rounded-2xl bg-teal-950/60 border border-teal-500/40 text-xs space-y-2 animate-fadeIn">
+                <div class="flex items-center justify-between text-teal-300 font-bold">
+                    <span class="flex items-center gap-1.5">
+                        <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>
+                        <span>Smart Problem Allocation Result:</span>
+                    </span>
+                    <span id="resTicketId" class="font-mono bg-teal-900/60 px-2 py-0.5 rounded text-teal-200"></span>
+                </div>
+                <div id="resSolverInfo" class="text-slate-200 font-semibold leading-relaxed"></div>
+            </div>
+        </div>
+
+        <!-- Right Column: Active Problem Tickets & Post-Resolution Rating (7 cols) -->
+        <div class="lg:col-span-7 space-y-6">
+            
+            <!-- Active Tickets Tracker & Rating System -->
+            <div class="bg-slate-900/70 border border-slate-800/90 rounded-3xl p-6 shadow-xl backdrop-blur-md">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-9 h-9 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 flex items-center justify-center">
+                            <i data-lucide="clipboard-list" class="w-4 h-4"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-base font-bold text-white tracking-tight">Active Problem Tickets & Reviews</h3>
+                            <p class="text-xs text-slate-400">Rate resolved solutions to earn +5 Reputation Points</p>
+                        </div>
+                    </div>
+                    <button onclick="fetchStudentTickets()" class="text-xs text-slate-400 hover:text-indigo-400 flex items-center space-x-1">
+                        <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                        <span>Sync</span>
+                    </button>
+                </div>
+
+                <!-- Tickets Feed -->
+                <div id="studentTicketsList" class="space-y-3.5 max-h-[420px] overflow-y-auto pr-1">
+                    <!-- Populated by JS with [⭐ Rate & Review Solution] on resolved tickets -->
+                </div>
+            </div>
+
+            <!-- SECTION: EVENT BOOKING & TIME CLASH DETECTION -->
+            <div class="bg-slate-900/70 border border-slate-800/90 rounded-3xl p-6 shadow-xl backdrop-blur-md space-y-4">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-9 h-9 rounded-xl bg-teal-500/10 text-teal-400 border border-teal-500/20 flex items-center justify-center">
+                            <i data-lucide="calendar-plus" class="w-4 h-4"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-base font-bold text-white tracking-tight">Campus Event & Venue Booking</h3>
+                            <p class="text-xs text-slate-400">Automated venue schedule validation & clash detection</p>
+                        </div>
+                    </div>
+                    <!-- Quick Clash Trigger Button -->
+                    <button type="button" onclick="fillEventClashSample()" class="px-2.5 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 font-semibold text-[11px] border border-amber-500/30 transition-all flex items-center space-x-1">
+                        <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-400"></i>
+                        <span>Test Auditorium Clash</span>
+                    </button>
+                </div>
+
+                <!-- Inline Clash Alert Banner (Blocks Submission) -->
+                <div id="inlineClashAlert" class="hidden p-4 rounded-2xl bg-rose-950/90 border-2 border-rose-500/80 text-xs text-rose-200 space-y-1 animate-fadeIn">
+                    <div class="flex items-center space-x-2 font-bold text-rose-300 text-sm">
+                        <i data-lucide="alert-octagon" class="w-5 h-5 text-rose-400"></i>
+                        <span id="inlineClashAlertText">⚠️ TIME CLASH DETECTED: Auditorium is already booked</span>
+                    </div>
+                    <p class="text-[11px] text-slate-300">
+                        This venue is occupied by a confirmed schedule. Submission is blocked until a different time or venue is selected.
+                    </p>
+                </div>
+
+                <form id="bookEventForm" onsubmit="submitEventBooking(event)" class="space-y-3.5">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">Event Title *</label>
+                        <input type="text" id="bookEventName" required placeholder="e.g., SST Robotics Showcase"
+                            value="SST Autonomous Robotics Demo"
+                            class="w-full bg-slate-950/90 border border-slate-700/80 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 rounded-xl px-3.5 py-2 text-xs text-slate-100 placeholder-slate-500 outline-none">
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Select Campus Venue *</label>
+                            <select id="bookEventVenue" required
+                                class="w-full bg-slate-950/90 border border-slate-700/80 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 rounded-xl px-3 py-2 text-xs text-slate-100 outline-none cursor-pointer">
+                                <option value="Main Auditorium">🏛️ Main Auditorium (Capacity: 800)</option>
+                                <option value="Block C Exam Hall">📝 Block C Exam Hall</option>
+                                <option value="Sports Complex">⚽ Campus Sports Complex</option>
+                                <option value="Innovation Hub">💡 Innovation & Robotics Hub</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Date *</label>
+                            <input type="text" id="bookEventDate" value="Today" required
+                                class="w-full bg-slate-950/90 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-100 outline-none">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Start Time (HH:MM)</label>
+                            <input type="text" id="bookEventStart" value="11:00" placeholder="09:00"
+                                class="w-full bg-slate-950/90 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-100 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">End Time (HH:MM)</label>
+                            <input type="text" id="bookEventEnd" value="14:00" placeholder="17:00"
+                                class="w-full bg-slate-950/90 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-100 outline-none">
+                        </div>
+                    </div>
+
+                    <button type="submit" id="btnSubmitEventBooking"
+                        class="w-full py-2.5 px-4 bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold rounded-xl shadow-lg shadow-teal-500/20 flex items-center justify-center space-x-2 transition-all text-xs">
+                        <i data-lucide="calendar-plus" class="w-4 h-4"></i>
+                        <span>Check Availability & Book Venue</span>
+                    </button>
+                </form>
+            </div>
+
+        </div>
+    </div>
+
+
+    <!-- ========================================================================= -->
+    <!-- SECTION 4: FILTERABLE ANNOUNCEMENTS FEED (Academic, Hostel, Events) -->
+    <!-- ========================================================================= -->
+    <section class="bg-slate-900/70 border border-slate-800/90 rounded-3xl p-6 md:p-7 shadow-xl backdrop-blur-md space-y-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center">
+                    <i data-lucide="megaphone" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-white tracking-tight">Campus Announcements & Feed</h3>
+                    <p class="text-xs text-slate-400">Institutional circulars, hostel updates, and campus events</p>
+                </div>
+            </div>
+
+            <!-- Filter Tabs (All, Academic, Hostel, Events) -->
+            <div class="flex items-center space-x-1.5 bg-slate-950 p-1.5 rounded-2xl border border-slate-800 text-xs">
+                <button onclick="filterAnnouncements('all')" id="tabAnnAll" class="px-3.5 py-1.5 rounded-xl font-bold bg-teal-500/20 text-teal-300 transition-all">
+                    All
+                </button>
+                <button onclick="filterAnnouncements('Academic')" id="tabAnnAcademic" class="px-3.5 py-1.5 rounded-xl text-slate-400 hover:text-white transition-all font-medium">
+                    Academic
+                </button>
+                <button onclick="filterAnnouncements('Hostel')" id="tabAnnHostel" class="px-3.5 py-1.5 rounded-xl text-slate-400 hover:text-white transition-all font-medium">
+                    Hostel
+                </button>
+                <button onclick="filterAnnouncements('Events')" id="tabAnnEvents" class="px-3.5 py-1.5 rounded-xl text-slate-400 hover:text-white transition-all font-medium">
+                    Events
+                </button>
+            </div>
+        </div>
+
+        <!-- Announcements Grid -->
+        <div id="announcementsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <!-- Populated via JS -->
+        </div>
+    </section>
+
+</div>
+
+
+<!-- ========================================================================= -->
+<!-- MODAL 1: RATE YOUR SERVICE EXPERIENCE (Post-Resolution Rating System) -->
+<!-- ========================================================================= -->
+<div id="rateServiceModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md animate-fadeIn">
+    <div class="bg-slate-900 border border-slate-700/80 rounded-3xl max-w-lg w-full p-6 md:p-7 shadow-2xl space-y-5 relative">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div class="flex items-center space-x-2.5">
+                <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center font-bold">
+                    ⭐
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-white">Rate Your Service Experience</h3>
+                    <p id="ratingModalSubtitle" class="text-xs text-slate-400">Assigned Solver: Ravi (Electrical)</p>
+                </div>
+            </div>
+            <button onclick="closeRateModal()" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+
+        <!-- Incentive Bonus Banner -->
+        <div class="p-3 rounded-2xl bg-teal-950/60 border border-teal-500/40 text-xs text-teal-200 flex items-center justify-between">
+            <span class="flex items-center gap-1.5">
+                <i data-lucide="award" class="w-4 h-4 text-teal-400 flex-shrink-0"></i>
+                <span>Submit feedback to earn <b>+5 Reputation Points</b></span>
+            </span>
+            <span class="px-2 py-0.5 rounded font-mono font-bold bg-teal-500/20 text-teal-300 border border-teal-500/30">+5 PTS</span>
+        </div>
+
+        <form id="rateServiceForm" onsubmit="submitServiceRating(event)" class="space-y-4">
+            <input type="hidden" id="rateTicketId">
+            <input type="hidden" id="rateSolverName">
+            <input type="hidden" id="rateSolverId">
+            <input type="hidden" id="rateCategory">
+
+            <!-- 1. Response Time (1 to 5 Stars) -->
+            <div class="bg-slate-950/70 p-3.5 rounded-2xl border border-slate-800 flex items-center justify-between">
+                <div>
+                    <label class="block text-xs font-bold text-slate-200">1. Response Time</label>
+                    <span class="text-[11px] text-slate-400">How quickly did the solver arrive?</span>
+                </div>
+                <div class="flex items-center space-x-1" id="starGroupResponse">
+                    <!-- 5 Stars generated by JS -->
+                </div>
+                <input type="hidden" id="valResponseTime" value="5">
+            </div>
+
+            <!-- 2. Quality of Solution (1 to 5 Stars) -->
+            <div class="bg-slate-950/70 p-3.5 rounded-2xl border border-slate-800 flex items-center justify-between">
+                <div>
+                    <label class="block text-xs font-bold text-slate-200">2. Quality of Solution</label>
+                    <span class="text-[11px] text-slate-400">How effective was the repair?</span>
+                </div>
+                <div class="flex items-center space-x-1" id="starGroupQuality">
+                    <!-- 5 Stars generated by JS -->
+                </div>
+                <input type="hidden" id="valQuality" value="5">
+            </div>
+
+            <!-- 3. Behavior & Helpfulness (1 to 5 Stars) -->
+            <div class="bg-slate-950/70 p-3.5 rounded-2xl border border-slate-800 flex items-center justify-between">
+                <div>
+                    <label class="block text-xs font-bold text-slate-200">3. Behavior & Helpfulness</label>
+                    <span class="text-[11px] text-slate-400">Politeness & professionalism</span>
+                </div>
+                <div class="flex items-center space-x-1" id="starGroupBehavior">
+                    <!-- 5 Stars generated by JS -->
+                </div>
+                <input type="hidden" id="valBehavior" value="5">
+            </div>
+
+            <!-- 4. Improvement Suggestion -->
+            <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">4. Improvement Suggestion</label>
+                <textarea id="rateSuggestion" rows="2" placeholder="What could have been done better? (Optional feedback)"
+                    class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2 text-xs text-slate-100 placeholder-slate-500 outline-none focus:border-amber-500">Fast arrival, courteous communication, and clean repair work!</textarea>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="flex justify-end space-x-2 pt-2 border-t border-slate-800">
+                <button type="button" onclick="closeRateModal()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold">
+                    Cancel
+                </button>
+                <button type="submit" id="btnSubmitRating"
+                    class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-teal-500 hover:from-amber-400 hover:to-teal-400 text-slate-950 font-extrabold text-xs shadow-lg shadow-amber-500/20 flex items-center space-x-1.5 transition-all">
+                    <span>⭐ Submit Rating & Claim +5 Rep</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+<!-- ========================================================================= -->
+<!-- MODAL 2: REPORT PROBLEM (Dedicated Modal) -->
+<!-- ========================================================================= -->
+<div id="reportProblemModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md animate-fadeIn">
+    <div class="bg-slate-900 border border-slate-700/80 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 relative">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div class="flex items-center space-x-2.5">
+                <div class="w-9 h-9 rounded-xl bg-teal-500/20 text-teal-400 border border-teal-500/30 flex items-center justify-center">
+                    <i data-lucide="file-plus" class="w-4 h-4"></i>
+                </div>
+                <h3 class="text-base font-bold text-white">Report Campus Problem</h3>
+            </div>
+            <button onclick="closeReportModal()" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+
+        <form onsubmit="submitModalReportProblem(event)" class="space-y-3.5">
+            <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Location *</label>
+                <input type="text" id="modalReportLocation" required value="Classroom 204"
+                    class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-slate-100 outline-none focus:border-teal-500">
+            </div>
+
+            <div class="grid grid-cols-2 gap-2.5">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Category *</label>
+                    <select id="modalReportCategory" required
+                        class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 outline-none focus:border-teal-500 cursor-pointer">
+                        <option value="Electrical">⚡ Electrical</option>
+                        <option value="IT">📶 IT</option>
+                        <option value="Hardware">🔧 Hardware</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Urgency *</label>
+                    <select id="modalReportUrgency" required
+                        class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 outline-none focus:border-teal-500 cursor-pointer">
+                        <option value="High">🟠 High</option>
+                        <option value="Critical">🔴 Critical</option>
+                        <option value="Medium">🟡 Medium</option>
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Description *</label>
+                <textarea id="modalReportDescription" rows="3" required
+                    class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-slate-100 outline-none focus:border-teal-500">Classroom projector fan overheating and failing HDMI handshake.</textarea>
+            </div>
+
+            <div class="flex justify-end space-x-2 pt-2 border-t border-slate-800">
+                <button type="button" onclick="closeReportModal()" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs">
+                    Cancel
+                </button>
+                <button type="submit" class="px-4 py-2 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs shadow-lg shadow-teal-500/20">
+                    Submit & Auto-Assign
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/student.js"></script>
+{% endblock %}

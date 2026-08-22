@@ -1,0 +1,366 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-8">
+
+    <!-- ========================================================================= -->
+    <!-- SECTION 1: CCTV DAMAGE REVIEW & DISCIPLINARY FINE PANEL -->
+    <!-- ========================================================================= -->
+    <section class="bg-slate-900/80 border border-slate-800/90 rounded-3xl p-6 md:p-7 shadow-2xl backdrop-blur-md relative overflow-hidden">
+        <!-- Ambient Glow -->
+        <div class="absolute -top-24 -right-24 w-48 h-48 bg-rose-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-800">
+            <div class="flex items-center space-x-3.5">
+                <div class="w-11 h-11 rounded-2xl bg-rose-500/15 text-rose-400 border border-rose-500/30 flex items-center justify-center shadow-lg shadow-rose-500/10">
+                    <i data-lucide="video" class="w-6 h-6 animate-pulse"></i>
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <h2 class="text-xl font-bold tracking-tight text-white">CCTV Damage Review Hub</h2>
+                        <span class="px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[10px] font-mono font-bold tracking-wider uppercase animate-pulse">
+                            AI OPTICAL SURVEILLANCE
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-0.5">Automated visual anomaly & property damage detection</p>
+                </div>
+            </div>
+
+            <!-- Target Student Status Indicator -->
+            <div class="flex items-center space-x-3 bg-slate-950/80 p-2.5 rounded-2xl border border-slate-800">
+                <div class="text-right">
+                    <p class="text-[10px] uppercase font-bold text-slate-400">Target Student Standing</p>
+                    <span id="adminStudentStandingBadge" class="text-xs font-bold text-emerald-400">Good Standing 🟢</span>
+                </div>
+                <div class="border-l border-slate-800 pl-3">
+                    <p class="text-[10px] uppercase font-bold text-slate-400">Total Fines</p>
+                    <span id="adminStudentFineText" class="text-xs font-mono font-bold text-amber-400">₹0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- CCTV Snapshot Card & Issue Fine Action Container -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-6 items-center">
+            
+            <!-- Left 7 cols: Simulated Visual Snapshot Frame -->
+            <div class="lg:col-span-7 bg-slate-950 rounded-2xl border border-slate-800 overflow-hidden shadow-2xl p-4 relative group">
+                <!-- Scanline effect -->
+                <div class="absolute inset-0 bg-gradient-to-b from-transparent via-rose-500/5 to-transparent cctv-scanline pointer-events-none"></div>
+
+                <!-- Snapshot HUD Header -->
+                <div class="flex items-center justify-between text-xs font-mono mb-2">
+                    <div class="flex items-center space-x-2 bg-slate-900/90 border border-slate-800 px-3 py-1 rounded-lg">
+                        <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+                        <span class="font-bold text-rose-300">CAM-09: Classroom 204 — 3:20 PM - Damaged Chair</span>
+                    </div>
+                    <span class="text-teal-400 bg-slate-900/90 border border-slate-800 px-2 py-1 rounded-lg">AI CONF: 98.2%</span>
+                </div>
+
+                <!-- SVG Visual Graphic of Damaged Chair Snapshot -->
+                <div class="w-full flex items-center justify-center my-3 bg-slate-950/90 rounded-xl border border-slate-900 p-2">
+                    <svg class="w-full h-44" viewBox="0 0 500 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Classroom Background Grid -->
+                        <rect x="10" y="10" width="480" height="180" rx="8" fill="#080f24" stroke="#1e293b" stroke-width="1.5"/>
+                        <line x1="10" y1="130" x2="490" y2="130" stroke="#1e293b" stroke-width="1.5"/>
+                        <rect x="40" y="40" width="120" height="60" rx="4" fill="#0e172e" stroke="#334155" stroke-width="1"/>
+                        <text x="55" y="75" fill="#64748b" font-family="'JetBrains Mono', monospace" font-size="10">WHITEBOARD</text>
+
+                        <!-- Desk 1 & Chair -->
+                        <rect x="200" y="70" width="100" height="50" rx="3" fill="#172554" stroke="#3b82f6" stroke-width="1"/>
+                        
+                        <!-- AI Red Bounding Box on Damaged Chair -->
+                        <rect x="310" y="60" width="150" height="110" rx="4" fill="rgba(244, 63, 94, 0.18)" stroke="#f43f5e" stroke-width="2" stroke-dasharray="6 3" class="animate-pulse"/>
+                        <rect x="310" y="38" width="150" height="22" rx="3" fill="#e11d48"/>
+                        <text x="316" y="53" fill="#ffffff" font-family="'JetBrains Mono', monospace" font-size="10" font-weight="bold">AI: FRACTURED CHAIR 98.2%</text>
+
+                        <!-- Damaged Chair Graphic -->
+                        <rect x="340" y="100" width="60" height="12" rx="2" fill="#ef4444" stroke="#fca5a5" stroke-width="1.5" transform="rotate(8 340 100)"/>
+                        <line x1="340" y1="100" x2="330" y2="70" stroke="#f87171" stroke-width="3" stroke-linecap="round"/>
+                        <line x1="330" y1="70" x2="370" y2="65" stroke="#f87171" stroke-width="3" stroke-linecap="round" stroke-dasharray="3 3"/>
+                        <line x1="345" y1="112" x2="335" y2="155" stroke="#ef4444" stroke-width="3" stroke-linecap="round"/>
+                        <line x1="395" y1="112" x2="415" y2="150" stroke="#ef4444" stroke-width="3" stroke-linecap="round" transform="rotate(-15 395 112)"/>
+                        <circle cx="415" cy="150" r="3" fill="#facc15"/>
+                    </svg>
+                </div>
+
+                <div class="flex items-center justify-between text-[11px] font-mono text-slate-400 bg-slate-900/80 p-2 rounded-xl border border-slate-800">
+                    <span class="text-rose-400 font-semibold flex items-center gap-1">
+                        <i data-lucide="map-pin" class="w-3 h-3"></i>
+                        <span>Classroom 204 — 3:20 PM - Damaged Chair</span>
+                    </span>
+                    <span class="text-slate-500">Student: Sameer Verma (SST-2023-CS042)</span>
+                </div>
+            </div>
+
+            <!-- Right 5 cols: Review & Disciplinary Fine Action Panel -->
+            <div class="lg:col-span-5 bg-slate-950/90 border border-slate-800 rounded-2xl p-5 space-y-4">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                            INCIDENT CCTV-204
+                        </span>
+                        <h3 class="text-base font-bold text-white mt-1.5">Damage Review & Penalty</h3>
+                    </div>
+                    <span class="text-xs font-mono text-slate-500">3:20 PM</span>
+                </div>
+
+                <p class="text-xs text-slate-300 leading-relaxed">
+                    AI Vision identified broken furniture leg and severed bracket in Classroom 204 assigned to student <b>Sameer Verma</b>.
+                </p>
+
+                <div class="p-3 rounded-xl bg-slate-900/90 border border-slate-800 text-xs space-y-1 text-slate-300">
+                    <div class="flex justify-between">
+                        <span>Suggested Fine:</span>
+                        <span class="font-mono font-bold text-rose-400">₹500</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Target Student:</span>
+                        <span class="font-semibold text-slate-200">Sameer Verma (CS23B089)</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Resulting Status:</span>
+                        <span class="font-bold text-rose-400">Action Required 🔴</span>
+                    </div>
+                </div>
+
+                <!-- REVIEW & ISSUE FINE BUTTON -->
+                <div class="pt-2">
+                    <button onclick="issueCctvFine()" id="btnIssueCctvFine"
+                        class="w-full py-3 px-4 bg-gradient-to-r from-rose-600 via-rose-500 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-rose-600/30 flex items-center justify-center space-x-2 transition-all transform active:scale-95">
+                        <i data-lucide="gavel" class="w-4 h-4"></i>
+                        <span>Review & Issue Fine ₹500</span>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+
+    <!-- ========================================================================= -->
+    <!-- SECTION 2: WORKER MANAGEMENT (CRUD) -->
+    <!-- ========================================================================= -->
+    <section class="bg-slate-900/80 border border-slate-800/90 rounded-3xl p-6 md:p-7 shadow-2xl backdrop-blur-md space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+            <div class="flex items-center space-x-3.5">
+                <div class="w-11 h-11 rounded-2xl bg-teal-500/15 text-teal-400 border border-teal-500/30 flex items-center justify-center shadow-lg shadow-teal-500/10">
+                    <i data-lucide="users-2" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold tracking-tight text-white">Worker Management Directory</h2>
+                    <p class="text-xs text-slate-400">Manage campus technical solvers, ratings, skills, and workload</p>
+                </div>
+            </div>
+
+            <!-- ADD WORKER BUTTON -->
+            <button onclick="openAddWorkerModal()"
+                class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-slate-950 font-extrabold text-xs shadow-lg shadow-teal-500/20 flex items-center space-x-2 transition-all transform active:scale-95">
+                <i data-lucide="user-plus" class="w-4 h-4"></i>
+                <span>➕ Add New Worker</span>
+            </button>
+        </div>
+
+        <!-- Worker Management CRUD Table -->
+        <div class="overflow-x-auto rounded-2xl border border-slate-800">
+            <table class="w-full text-left text-xs">
+                <thead class="bg-slate-950/90 text-slate-400 font-mono uppercase text-[11px] border-b border-slate-800">
+                    <tr>
+                        <th class="py-3.5 px-4 font-bold">Worker ID & Name</th>
+                        <th class="py-3.5 px-4 font-bold">Skill Category</th>
+                        <th class="py-3.5 px-4 font-bold text-center">Tasks Solved</th>
+                        <th class="py-3.5 px-4 font-bold text-center">Rating</th>
+                        <th class="py-3.5 px-4 font-bold text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="workersTableBody" class="divide-y divide-slate-800/80 bg-slate-900/40">
+                    <!-- Populated via JS -->
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+
+    <!-- ========================================================================= -->
+    <!-- SECTION 3: WORKER REVIEWS LOG (Student Ratings & Constructive Feedback) -->
+    <!-- ========================================================================= -->
+    <section class="bg-slate-900/80 border border-slate-800/90 rounded-3xl p-6 md:p-7 shadow-2xl backdrop-blur-md space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+            <div class="flex items-center space-x-3.5">
+                <div class="w-11 h-11 rounded-2xl bg-amber-500/15 text-amber-400 border border-amber-500/30 flex items-center justify-center shadow-lg shadow-amber-500/10">
+                    <i data-lucide="star" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold tracking-tight text-white">Worker Reviews Log</h2>
+                    <p class="text-xs text-slate-400">Audit star ratings, response metrics, and constructive feedback from students</p>
+                </div>
+            </div>
+            <button onclick="fetchWorkerReviews()" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs flex items-center gap-1.5 transition-colors border border-slate-700">
+                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                <span>Refresh Reviews</span>
+            </button>
+        </div>
+
+        <!-- Dedicated Reviews Table -->
+        <div class="overflow-x-auto rounded-2xl border border-slate-800">
+            <table class="w-full text-left text-xs">
+                <thead class="bg-slate-950/90 text-slate-400 font-mono uppercase text-[11px] border-b border-slate-800">
+                    <tr>
+                        <th class="py-3.5 px-4 font-bold">Solver Name & Skill</th>
+                        <th class="py-3.5 px-4 font-bold">Student Reviewer</th>
+                        <th class="py-3.5 px-4 font-bold text-center">Response</th>
+                        <th class="py-3.5 px-4 font-bold text-center">Quality</th>
+                        <th class="py-3.5 px-4 font-bold text-center">Behavior</th>
+                        <th class="py-3.5 px-4 font-bold text-center">Avg Rating</th>
+                        <th class="py-3.5 px-4 font-bold">Constructive Feedback / Suggestions</th>
+                    </tr>
+                </thead>
+                <tbody id="reviewsTableBody" class="divide-y divide-slate-800/80 bg-slate-900/40">
+                    <!-- Populated via JS -->
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+
+    <!-- ========================================================================= -->
+    <!-- SECTION 4: CAMPUS PROBLEM TICKETS DISPATCH BOARD -->
+    <!-- ========================================================================= -->
+    <section class="bg-slate-900/80 border border-slate-800/90 rounded-3xl p-6 md:p-7 shadow-2xl backdrop-blur-md space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+            <div class="flex items-center space-x-3.5">
+                <div class="w-11 h-11 rounded-2xl bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 flex items-center justify-center shadow-lg shadow-indigo-500/10">
+                    <i data-lucide="ticket" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold tracking-tight text-white">Campus Problem Tickets & Dispatch Board</h2>
+                    <p class="text-xs text-slate-400">Real-time status and solver assignment breakdown</p>
+                </div>
+            </div>
+            <button onclick="fetchAdminTickets()" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors">
+                <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+            </button>
+        </div>
+
+        <!-- Tickets List -->
+        <div id="adminTicketsContainer" class="space-y-4">
+            <!-- Populated via JS -->
+        </div>
+    </section>
+
+</div>
+
+
+<!-- ========================================================================= -->
+<!-- MODAL: ADD NEW WORKER -->
+<!-- ========================================================================= -->
+<div id="addWorkerModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md animate-fadeIn">
+    <div class="bg-slate-900 border border-slate-700/80 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 relative">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div class="flex items-center space-x-2.5">
+                <div class="w-9 h-9 rounded-xl bg-teal-500/20 text-teal-400 border border-teal-500/30 flex items-center justify-center">
+                    <i data-lucide="user-plus" class="w-4 h-4"></i>
+                </div>
+                <h3 class="text-base font-bold text-white">Add New Technical Solver</h3>
+            </div>
+            <button onclick="closeAddWorkerModal()" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+
+        <form id="addWorkerForm" onsubmit="submitAddWorker(event)" class="space-y-4">
+            <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Worker Name *</label>
+                <input type="text" id="addWorkerName" required placeholder="e.g. Ramesh Chandra"
+                    class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-slate-100 placeholder-slate-500 outline-none focus:border-teal-500">
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Skill Category *</label>
+                <select id="addWorkerCategory" required
+                    class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-slate-100 outline-none focus:border-teal-500 cursor-pointer">
+                    <option value="Electrical">⚡ Electrical</option>
+                    <option value="IT">📶 IT & Network</option>
+                    <option value="Hardware">🔧 Hardware & Equipment</option>
+                    <option value="Plumbing">🚰 Plumbing</option>
+                    <option value="Civil">🚪 Civil & Infrastructure</option>
+                </select>
+            </div>
+
+            <div class="p-3 rounded-xl bg-slate-950/70 border border-slate-800 text-[11px] text-slate-400 space-y-1">
+                <p>⭐ <b>Default Initial Rating:</b> 5.0 (Top tier)</p>
+                <p>📦 <b>Default Tasks Solved:</b> 0</p>
+            </div>
+
+            <div class="flex justify-end space-x-2 pt-2 border-t border-slate-800">
+                <button type="button" onclick="closeAddWorkerModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold">
+                    Cancel
+                </button>
+                <button type="submit" class="px-4 py-2 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs shadow-lg shadow-teal-500/20">
+                    ➕ Create Worker
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+<!-- ========================================================================= -->
+<!-- MODAL: EDIT WORKER -->
+<!-- ========================================================================= -->
+<div id="editWorkerModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md animate-fadeIn">
+    <div class="bg-slate-900 border border-slate-700/80 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 relative">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div class="flex items-center space-x-2.5">
+                <div class="w-9 h-9 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center">
+                    <i data-lucide="edit-3" class="w-4 h-4"></i>
+                </div>
+                <h3 class="text-base font-bold text-white">Edit Worker Details</h3>
+            </div>
+            <button onclick="closeEditWorkerModal()" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+
+        <form id="editWorkerForm" onsubmit="submitEditWorker(event)" class="space-y-4">
+            <input type="hidden" id="editWorkerId">
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Worker Name *</label>
+                <input type="text" id="editWorkerName" required
+                    class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-slate-100 outline-none focus:border-indigo-500">
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Skill Category *</label>
+                <select id="editWorkerCategory" required
+                    class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-slate-100 outline-none focus:border-indigo-500 cursor-pointer">
+                    <option value="Electrical">⚡ Electrical</option>
+                    <option value="IT">📶 IT & Network</option>
+                    <option value="Hardware">🔧 Hardware & Equipment</option>
+                    <option value="Plumbing">🚰 Plumbing</option>
+                    <option value="Civil">🚪 Civil & Infrastructure</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Rating (⭐ 1.0 - 5.0)</label>
+                <input type="number" step="0.1" min="1.0" max="5.0" id="editWorkerRating"
+                    class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-slate-100 outline-none focus:border-indigo-500">
+            </div>
+
+            <div class="flex justify-end space-x-2 pt-2 border-t border-slate-800">
+                <button type="button" onclick="closeEditWorkerModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold">
+                    Cancel
+                </button>
+                <button type="submit" class="px-4 py-2 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white font-bold text-xs shadow-lg shadow-indigo-500/20">
+                    💾 Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/admin.js"></script>
+{% endblock %}

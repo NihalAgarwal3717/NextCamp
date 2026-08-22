@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NextCamp — Authentication | The Campus That Fixes Itself</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#ecfdf5',
+                            500: '#14b8a6',
+                            600: '#0d9488',
+                            900: '#134e4a',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts & Lucide Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="h-full bg-slate-950 text-slate-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-x-hidden selection:bg-teal-500 selection:text-slate-950">
+
+    <!-- Ambient glowing backgrounds -->
+    <div class="fixed top-0 left-1/4 w-96 h-96 bg-teal-500/10 rounded-full blur-3xl pointer-events-none -z-10 animate-pulse"></div>
+    <div class="fixed bottom-0 right-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none -z-10"></div>
+
+    <div class="sm:mx-auto sm:w-full sm:max-w-md text-center">
+        <!-- Logo & Tagline -->
+        <div class="inline-flex items-center space-x-3 mb-3">
+            <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-teal-400 via-teal-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-teal-500/20 text-slate-950 font-black text-2xl">
+                ⚡
+            </div>
+            <div class="text-left">
+                <h1 class="text-2xl font-black tracking-tight text-white flex items-center gap-1.5">
+                    Next<span class="text-teal-400">Camp</span>
+                </h1>
+                <p class="text-xs font-semibold text-slate-300/80 tracking-wide">The Campus That Fixes Itself</p>
+            </div>
+        </div>
+        <h2 class="mt-2 text-xl font-bold tracking-tight text-white">Campus Single Sign-On (SSO)</h2>
+        <p class="mt-1 text-xs text-slate-400">Restricted institutional access for Scaler School of Technology</p>
+    </div>
+
+    <div class="mt-7 sm:mx-auto sm:w-full sm:max-w-md px-4 sm:px-0">
+        <div class="bg-slate-900/80 border border-slate-800/90 py-8 px-6 shadow-2xl rounded-3xl sm:px-10 backdrop-blur-xl relative">
+
+            <!-- Error Banner (Server-side or JS validation) -->
+            <div id="errorAlertBox" class="{% if not error %}hidden{% endif %} mb-5 p-4 rounded-2xl bg-rose-950/80 border border-rose-500/50 text-xs text-rose-200 flex items-start space-x-2.5 animate-fadeIn">
+                <i data-lucide="alert-octagon" class="w-5 h-5 text-rose-400 flex-shrink-0 mt-0.5"></i>
+                <div>
+                    <strong class="font-bold text-rose-300 block mb-0.5">Access Denied</strong>
+                    <span id="errorMessageText">{{ error or 'Access restricted! Only @sst.scaler.com email addresses are authorized.' }}</span>
+                </div>
+            </div>
+
+            <!-- Login Form -->
+            <form id="loginForm" action="/login" method="POST" onsubmit="return validateDomain(event)" class="space-y-5">
+                
+                <!-- Role Toggle Pill (Student / Admin) -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Select Portal Role</label>
+                    <div class="grid grid-cols-2 gap-2 p-1.5 bg-slate-950 rounded-2xl border border-slate-800 text-xs font-bold">
+                        <label class="flex items-center justify-center space-x-2 py-2 rounded-xl cursor-pointer transition-all role-option" id="roleLabelStudent">
+                            <input type="radio" name="role" value="Student" class="sr-only" checked onchange="toggleRoleUI('Student')">
+                            <i data-lucide="graduation-cap" class="w-4 h-4 text-teal-400"></i>
+                            <span>Student</span>
+                        </label>
+                        <label class="flex items-center justify-center space-x-2 py-2 rounded-xl cursor-pointer transition-all role-option text-slate-400 hover:text-white" id="roleLabelAdmin">
+                            <input type="radio" name="role" value="Admin" class="sr-only" onchange="toggleRoleUI('Admin')">
+                            <i data-lucide="shield-check" class="w-4 h-4 text-indigo-400"></i>
+                            <span>Campus Admin</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Institutional Email Input -->
+                <div>
+                    <label for="email" class="block text-xs font-semibold text-slate-300 mb-1">
+                        Institutional Email Address *
+                    </label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                            <i data-lucide="mail" class="w-4 h-4"></i>
+                        </div>
+                        <input id="email" name="email" type="email" autocomplete="email" required
+                            value="{{ email or 'sameer.verma@sst.scaler.com' }}"
+                            placeholder="username@sst.scaler.com"
+                            class="w-full pl-10 pr-4 py-2.5 bg-slate-950/90 border border-slate-700/80 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all font-mono">
+                    </div>
+                    <p class="mt-1 text-[11px] text-teal-400/80 flex items-center gap-1 font-mono">
+                        <i data-lucide="shield-check" class="w-3 h-3"></i>
+                        <span>Domain restricted: strictly ends with <b>@sst.scaler.com</b></span>
+                    </p>
+                </div>
+
+                <!-- Password Input -->
+                <div>
+                    <label for="password" class="block text-xs font-semibold text-slate-300 mb-1">Password</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                            <i data-lucide="lock" class="w-4 h-4"></i>
+                        </div>
+                        <input id="password" name="password" type="password" required value="scaler123"
+                            class="w-full pl-10 pr-4 py-2.5 bg-slate-950/90 border border-slate-700/80 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all">
+                    </div>
+                </div>
+
+                <!-- Sign In Button -->
+                <div>
+                    <button type="submit" id="btnSignIn"
+                        class="w-full py-3 px-4 bg-gradient-to-r from-teal-500 via-teal-400 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-slate-950 font-extrabold text-sm rounded-xl shadow-lg shadow-teal-500/25 flex items-center justify-center space-x-2 transition-all transform active:scale-[0.98]">
+                        <i data-lucide="log-in" class="w-4 h-4"></i>
+                        <span>Authenticate & Enter NextCamp</span>
+                    </button>
+                </div>
+            </form>
+
+            <!-- 1-Click Demo Quick Fill Buttons -->
+            <div class="mt-6 pt-5 border-t border-slate-800/80">
+                <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1">
+                    <i data-lucide="sparkles" class="w-3.5 h-3.5 text-teal-400"></i>
+                    <span>Quick Test Logins:</span>
+                </p>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <button type="button" onclick="quickFill('student')" class="p-2.5 rounded-xl bg-slate-950 border border-slate-800 hover:border-teal-500/50 hover:bg-slate-900 text-left transition-all group">
+                        <div class="flex items-center space-x-1.5 font-bold text-teal-300">
+                            <i data-lucide="user" class="w-3.5 h-3.5"></i>
+                            <span>Student Demo</span>
+                        </div>
+                        <span class="text-[10px] text-slate-400 font-mono block mt-0.5 truncate">sameer.verma@sst.scaler.com</span>
+                    </button>
+
+                    <button type="button" onclick="quickFill('admin')" class="p-2.5 rounded-xl bg-slate-950 border border-slate-800 hover:border-indigo-500/50 hover:bg-slate-900 text-left transition-all group">
+                        <div class="flex items-center space-x-1.5 font-bold text-indigo-300">
+                            <i data-lucide="shield" class="w-3.5 h-3.5"></i>
+                            <span>Admin Demo</span>
+                        </div>
+                        <span class="text-[10px] text-slate-400 font-mono block mt-0.5 truncate">admin@sst.scaler.com</span>
+                    </button>
+                </div>
+
+                <!-- Test Invalid Domain Button to show requirement validation -->
+                <button type="button" onclick="quickFill('invalid')" class="w-full mt-2 py-1.5 px-3 rounded-xl bg-rose-950/40 border border-rose-500/30 hover:border-rose-500 text-rose-300 text-[11px] font-semibold flex items-center justify-center space-x-1.5 transition-all">
+                    <i data-lucide="ban" class="w-3.5 h-3.5 text-rose-400"></i>
+                    <span>Test Domain Rejection (@gmail.com)</span>
+                </button>
+            </div>
+
+        </div>
+
+        <p class="mt-6 text-center text-xs text-slate-500">
+            NextCamp &copy; 2026 Scaler School of Technology. Protected by Autonomous Campus Security.
+        </p>
+    </div>
+
+    <script>
+        function toggleRoleUI(role) {
+            const studentLabel = document.getElementById('roleLabelStudent');
+            const adminLabel = document.getElementById('roleLabelAdmin');
+            
+            if (role === 'Student') {
+                studentLabel.className = 'flex items-center justify-center space-x-2 py-2 rounded-xl cursor-pointer transition-all bg-teal-500/20 text-teal-300 border border-teal-500/40 shadow-sm';
+                adminLabel.className = 'flex items-center justify-center space-x-2 py-2 rounded-xl cursor-pointer transition-all text-slate-400 hover:text-white';
+            } else {
+                adminLabel.className = 'flex items-center justify-center space-x-2 py-2 rounded-xl cursor-pointer transition-all bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 shadow-sm';
+                studentLabel.className = 'flex items-center justify-center space-x-2 py-2 rounded-xl cursor-pointer transition-all text-slate-400 hover:text-white';
+            }
+        }
+
+        function validateDomain(event) {
+            const emailInput = document.getElementById('email');
+            const email = emailInput.value.trim().toLowerCase();
+            const alertBox = document.getElementById('errorAlertBox');
+            const msgText = document.getElementById('errorMessageText');
+
+            if (!email.endsWith('@sst.scaler.com')) {
+                event.preventDefault();
+                alertBox.classList.remove('hidden');
+                msgText.innerText = 'Access restricted! Only @sst.scaler.com email addresses are authorized.';
+                emailInput.focus();
+                emailInput.classList.add('border-rose-500');
+                if (window.lucide) lucide.createIcons();
+                return false;
+            }
+            return true;
+        }
+
+        function quickFill(type) {
+            const email = document.getElementById('email');
+            const pass = document.getElementById('password');
+            const roleStudent = document.querySelector('input[name="role"][value="Student"]');
+            const roleAdmin = document.querySelector('input[name="role"][value="Admin"]');
+            const alertBox = document.getElementById('errorAlertBox');
+
+            if (alertBox) alertBox.classList.add('hidden');
+            if (email) email.classList.remove('border-rose-500');
+
+            if (type === 'student') {
+                email.value = 'sameer.verma@sst.scaler.com';
+                pass.value = 'scaler123';
+                roleStudent.checked = true;
+                toggleRoleUI('Student');
+            } else if (type === 'admin') {
+                email.value = 'admin@sst.scaler.com';
+                pass.value = 'admin123';
+                roleAdmin.checked = true;
+                toggleRoleUI('Admin');
+            } else if (type === 'invalid') {
+                email.value = 'student@gmail.com';
+                pass.value = 'password123';
+                roleStudent.checked = true;
+                toggleRoleUI('Student');
+                // Trigger client validation check to display error immediately
+                const msgText = document.getElementById('errorMessageText');
+                alertBox.classList.remove('hidden');
+                msgText.innerText = 'Access restricted! Only @sst.scaler.com email addresses are authorized.';
+                email.classList.add('border-rose-500');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            toggleRoleUI('Student');
+            if (window.lucide) lucide.createIcons();
+        });
+    </script>
+</body>
+</html>
