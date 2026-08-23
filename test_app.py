@@ -364,6 +364,61 @@ class NextCampComprehensiveTestCase(unittest.TestCase):
         res_rating = unauth_client.post('/api/submit-rating', data=json.dumps({"ticket_id": "TCK-1001", "quality": 5}), content_type='application/json')
         self.assertEqual(res_rating.status_code, 401)
 
+    def test_debug_session_endpoint_and_lifecycle(self):
+        """
+        Verify the complete session lifecycle via /api/debug/session and /api/me:
+        1. Unauthenticated -> authenticated: False.
+        2. Student Login -> authenticated: True, role: Student, user_id correct.
+        3. 5 Consecutive refreshes -> authenticated remains True, user_id unchanged.
+        4. GET /api/me returns full user data.
+        5. Logout -> authenticated: False.
+        """
+        client = app.test_client()
+
+        # 1. Unauthenticated
+        res = client.get('/api/debug/session')
+        self.assertEqual(res.status_code, 200)
+        data = json.loads(res.data)
+        self.assertFalse(data["authenticated"])
+        self.assertIsNone(data["user_id"])
+
+        # 2. Login Student
+        client.post('/login', data={'email': 'sameer.verma@sst.scaler.com', 'password': 'scaler123', 'role': 'Student'})
+        
+        # 3. Verify debug session
+        res2 = client.get('/api/debug/session')
+        self.assertEqual(res2.status_code, 200)
+        d2 = json.loads(res2.data)
+        self.assertTrue(d2["authenticated"])
+        self.assertEqual(d2["role"], "Student")
+        self.assertEqual(d2["email"], "sameer.verma@sst.scaler.com")
+
+        # 4. Simulate multiple page refreshes
+        for _ in range(5):
+            res_ref = client.get('/api/debug/session')
+            d_ref = json.loads(res_ref.data)
+            self.assertTrue(d_ref["authenticated"])
+            self.assertEqual(d_ref["user_id"], d2["user_id"])
+            self.assertEqual(d_ref["email"], "sameer.verma@sst.scaler.com")
+
+        # 5. GET /api/me
+        res_me = client.get('/api/me')
+        self.assertEqual(res_me.status_code, 200)
+        d_me = json.loads(res_me.data)
+        self.assertTrue(d_me["authenticated"])
+        self.assertEqual(d_me["name"], "Sameer Verma")
+        self.assertEqual(d_me["student_id"], "SST-2023-CS042")
+
+        # 6. Logout
+        client.get('/logout')
+        res_post_logout = client.get('/api/debug/session')
+        d_pl = json.loads(res_post_logout.data)
+        self.assertFalse(d_pl["authenticated"])
+        self.assertIsNone(d_pl["user_id"])
+
+        res_me_logged_out = client.get('/api/me')
+        self.assertEqual(res_me_logged_out.status_code, 401)
+
     # =========================================================================
     # 3. ROLE-BASED ACCESS CONTROL (RBAC) & AUTHORIZATION TESTS
     # =========================================================================

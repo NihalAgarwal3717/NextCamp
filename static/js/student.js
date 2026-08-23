@@ -16,7 +16,12 @@ let currentCategoryFilter = 'all';
 async function fetchStudentProfile() {
     try {
         const res = await fetch('/api/student/profile');
-        if (!res.ok) return;
+        if (!res.ok) {
+            if (res.status === 401) {
+                window.location.href = '/login';
+            }
+            return;
+        }
         const student = await res.json();
 
         const badge = document.getElementById('studentStandingBadge');
@@ -25,6 +30,7 @@ async function fetchStudentProfile() {
         const banner = document.getElementById('studentFineBanner');
         const bannerText = document.getElementById('studentFineBannerText');
         const nameEl = document.getElementById('studentProfileName');
+        const headerName = document.getElementById('headerUserName');
         const repPointsEl = document.getElementById('studentReputationPoints');
         const headerRep = document.getElementById('headerReputationScore');
         const headerBadge = document.getElementById('headerUserBadge');
@@ -40,6 +46,7 @@ async function fetchStudentProfile() {
         const btnCurrentFinePay = document.getElementById('btnCurrentFinePay');
 
         if (nameEl && student.name) nameEl.innerText = student.name;
+        if (headerName && student.name) headerName.innerText = student.name;
         if (repPointsEl && student.reputation_points !== undefined) repPointsEl.innerText = student.reputation_points;
         if (headerRep && student.reputation !== undefined) headerRep.innerText = `⭐ ${parseFloat(student.reputation).toFixed(1)}`;
         if (headerBadge && student.badge) headerBadge.innerText = student.badge;
