@@ -12,11 +12,6 @@ __pycache__/
 *.env
 
 # SQLite Databases
-*.db
-*.sqlite
-*.sqlite3
-nextcamp.db
-test_nextcamp.db
 
 # Logs & Temporary test files
 *.log

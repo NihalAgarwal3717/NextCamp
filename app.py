@@ -524,7 +524,7 @@ def student_dashboard():
         return redirect(url_for("login_page"))
     if user.get("role") == "Admin":
         return redirect(url_for("admin_dashboard"))
-    return render_template("index.html", user=session, active_tab="dashboard")
+    return render_template("index.html", user=user, active_tab="dashboard")
 
 
 @app.route("/announcements")
@@ -536,7 +536,7 @@ def student_announcements():
         return redirect(url_for("login_page"))
     if user.get("role") == "Admin":
         return redirect(url_for("admin_dashboard"))
-    return render_template("index.html", user=session, active_tab="announcements")
+    return render_template("index.html", user=user, active_tab="announcements")
 
 
 @app.route("/events")
@@ -548,7 +548,7 @@ def student_events():
         return redirect(url_for("login_page"))
     if user.get("role") == "Admin":
         return redirect(url_for("admin_dashboard"))
-    return render_template("index.html", user=session, active_tab="events")
+    return render_template("index.html", user=user, active_tab="events")
 
 
 @app.route("/registrations")
@@ -560,7 +560,7 @@ def student_registrations():
         return redirect(url_for("login_page"))
     if user.get("role") == "Admin":
         return redirect(url_for("admin_dashboard"))
-    return render_template("index.html", user=session, active_tab="registrations")
+    return render_template("index.html", user=user, active_tab="registrations")
 
 
 @app.route("/tickets")
@@ -572,7 +572,7 @@ def student_tickets():
         return redirect(url_for("login_page"))
     if user.get("role") == "Admin":
         return redirect(url_for("admin_dashboard"))
-    return render_template("index.html", user=session, active_tab="tickets")
+    return render_template("index.html", user=user, active_tab="tickets")
 
 
 @app.route("/profile")
@@ -584,7 +584,7 @@ def student_profile():
         return redirect(url_for("login_page"))
     if user.get("role") == "Admin":
         return redirect(url_for("admin_dashboard"))
-    return render_template("index.html", user=session, active_tab="profile")
+    return render_template("index.html", user=user, active_tab="profile")
 
 
 @app.route("/admin/dashboard")
@@ -595,7 +595,7 @@ def admin_dashboard():
     user = load_authenticated_user_session()
     if not user or user.get("role") != "Admin":
         return redirect(url_for("login_page"))
-    return render_template("admin.html", user=session, active_tab="dashboard")
+    return render_template("admin.html", user=user, active_tab="dashboard")
 
 
 @app.route("/admin/announcements")
@@ -605,7 +605,7 @@ def admin_announcements():
     user = load_authenticated_user_session()
     if not user or user.get("role") != "Admin":
         return redirect(url_for("login_page"))
-    return render_template("admin.html", user=session, active_tab="announcements")
+    return render_template("admin.html", user=user, active_tab="announcements")
 
 
 @app.route("/admin/events")
@@ -615,7 +615,7 @@ def admin_events():
     user = load_authenticated_user_session()
     if not user or user.get("role") != "Admin":
         return redirect(url_for("login_page"))
-    return render_template("admin.html", user=session, active_tab="events")
+    return render_template("admin.html", user=user, active_tab="events")
 
 
 @app.route("/admin/users")
@@ -625,7 +625,7 @@ def admin_users():
     user = load_authenticated_user_session()
     if not user or user.get("role") != "Admin":
         return redirect(url_for("login_page"))
-    return render_template("admin.html", user=session, active_tab="users")
+    return render_template("admin.html", user=user, active_tab="users")
 
 
 @app.route("/admin/tickets")
@@ -635,7 +635,7 @@ def admin_tickets():
     user = load_authenticated_user_session()
     if not user or user.get("role") != "Admin":
         return redirect(url_for("login_page"))
-    return render_template("admin.html", user=session, active_tab="tickets")
+    return render_template("admin.html", user=user, active_tab="tickets")
 
 
 @app.route("/admin/profile")
@@ -645,12 +645,49 @@ def admin_profile():
     user = load_authenticated_user_session()
     if not user or user.get("role") != "Admin":
         return redirect(url_for("login_page"))
-    return render_template("admin.html", user=session, active_tab="profile")
+    return render_template("admin.html", user=user, active_tab="profile")
 
 
 # ==============================================================================
 # REST API ENDPOINTS
 # ==============================================================================
+
+@app.route("/api/debug/session", methods=["GET"])
+def debug_session():
+    """Development/debug endpoint returning safe session authentication status."""
+    user = load_authenticated_user_session()
+    return jsonify({
+        "authenticated": bool(user),
+        "user_id": user["id"] if user else None,
+        "email": user["email"] if user else None,
+        "name": user["name"] if user else None,
+        "role": user["role"] if user else session.get("role"),
+        "session_keys": list(session.keys())
+    }), 200
+
+
+@app.route("/api/me", methods=["GET"])
+@login_required()
+def get_current_user():
+    """Returns the currently authenticated user based strictly on the verified session and database lookup."""
+    user = load_authenticated_user_session()
+    if not user:
+        return jsonify({"authenticated": False, "error": "Not authenticated"}), 401
+    
+    return jsonify({
+        "authenticated": True,
+        "id": user["id"],
+        "name": user["name"],
+        "email": user["email"],
+        "role": user["role"],
+        "student_id": user.get("student_id", ""),
+        "status": user.get("status", "Good Standing 🟢"),
+        "fine_amount": user.get("fine_amount", 0),
+        "reputation": user.get("reputation", 4.7),
+        "reputation_points": user.get("reputation_points", 94),
+        "badge": user.get("badge", "Tech Support Pro")
+    }), 200
+
 
 @app.route("/api/student/profile", methods=["GET"])
 @login_required()
@@ -667,14 +704,10 @@ def get_student_profile():
         cursor.execute("SELECT * FROM users WHERE id = ?", (target_user_id,))
     elif role == "Admin":
         cursor.execute("SELECT * FROM users WHERE role = 'Student' ORDER BY id ASC LIMIT 1")
-    elif role == "Student" and user_id:
-        cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
-    elif role == "Student" and email:
-        cursor.execute("SELECT * FROM users WHERE LOWER(email) = ?", (str(email).lower(),))
     elif user_id:
         cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
     elif email:
-        cursor.execute("SELECT * FROM users WHERE LOWER(email) = ?", (str(email).lower(),))
+        cursor.execute("SELECT * FROM users WHERE LOWER(email) = LOWER(?)", (str(email).lower(),))
     else:
         conn.close()
         return jsonify({"error": "Authentication required. Please log in."}), 401
@@ -706,6 +739,7 @@ def get_student_profile():
         "user_id": user["id"],
         "name": user["name"],
         "email": user["email"],
+        "role": user["role"],
         "roll": user.get("student_id", ""),
         "student_id": user.get("student_id", ""),
         "department": "Computer Science & AI",
