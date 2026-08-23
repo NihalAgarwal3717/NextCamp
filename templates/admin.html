@@ -1,295 +1,854 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="space-y-8">
+<div class="space-y-8" id="adminMainContent" data-active-tab="{{ active_tab | default('dashboard') }}">
 
     <!-- ========================================================================= -->
-    <!-- SECTION 1: CCTV DAMAGE REVIEW & DISCIPLINARY FINE PANEL -->
+    <!-- TAB 1: ADMIN DASHBOARD OVERVIEW -->
     <!-- ========================================================================= -->
-    <section class="bg-slate-900/80 border border-slate-800/90 rounded-3xl p-6 md:p-7 shadow-2xl backdrop-blur-md relative overflow-hidden">
-        <!-- Ambient Glow -->
-        <div class="absolute -top-24 -right-24 w-48 h-48 bg-rose-500/10 rounded-full blur-3xl pointer-events-none"></div>
-
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-800">
-            <div class="flex items-center space-x-3.5">
-                <div class="w-11 h-11 rounded-2xl bg-rose-500/15 text-rose-400 border border-rose-500/30 flex items-center justify-center shadow-lg shadow-rose-500/10">
-                    <i data-lucide="video" class="w-6 h-6 animate-pulse"></i>
+    <div id="admin-section-dashboard" class="space-y-6 animate-fadeIn">
+        
+        <!-- Welcome Hero Banner -->
+        <div class="bg-slate-900/80 border border-slate-800/90 rounded-3xl p-6 md:p-7 shadow-xl backdrop-blur-md flex flex-col md:flex-row md:items-center justify-between gap-5 relative overflow-hidden">
+            <div class="flex items-center space-x-4">
+                <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-500 to-teal-500 flex items-center justify-center font-black text-slate-950 text-xl shadow-lg shadow-indigo-500/20 flex-shrink-0">
+                    AD
                 </div>
                 <div>
-                    <div class="flex items-center space-x-2">
-                        <h2 class="text-xl font-bold tracking-tight text-white">CCTV Damage Review Hub</h2>
-                        <span class="px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[10px] font-mono font-bold tracking-wider uppercase animate-pulse">
-                            AI OPTICAL SURVEILLANCE
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h2 class="text-xl font-bold text-white tracking-tight">Admin Central Command</h2>
+                        <span class="px-3 py-0.5 rounded-full text-xs font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">
+                            Super Admin 🛡️
                         </span>
                     </div>
-                    <p class="text-xs text-slate-400 mt-0.5">Automated visual anomaly & property damage detection</p>
+                    <p class="text-xs text-slate-400 mt-1 flex flex-wrap items-center gap-2">
+                        <span>Staff ID: SST-FACULTY-01</span>
+                        <span>•</span>
+                        <span class="text-teal-400 font-mono">admin@sst.scaler.com</span>
+                    </p>
                 </div>
             </div>
 
-            <!-- Target Student Status Indicator -->
-            <div class="flex items-center space-x-3 bg-slate-950/80 p-2.5 rounded-2xl border border-slate-800">
-                <div class="text-right">
-                    <p class="text-[10px] uppercase font-bold text-slate-400">Target Student Standing</p>
-                    <span id="adminStudentStandingBadge" class="text-xs font-bold text-emerald-400">Good Standing 🟢</span>
-                </div>
-                <div class="border-l border-slate-800 pl-3">
-                    <p class="text-[10px] uppercase font-bold text-slate-400">Total Fines</p>
-                    <span id="adminStudentFineText" class="text-xs font-mono font-bold text-amber-400">₹0</span>
-                </div>
-            </div>
+            <!-- Quick Profile Action -->
+            <button onclick="switchAdminTab('profile')" class="px-4 py-2 rounded-2xl bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 font-semibold transition-colors border border-slate-700 flex items-center gap-2 cursor-pointer self-start md:self-auto">
+                <i data-lucide="shield" class="w-4 h-4 text-indigo-400"></i>
+                <span>Admin Profile</span>
+            </button>
         </div>
 
-        <!-- CCTV Snapshot Card & Issue Fine Action Container -->
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-6 items-center">
+        <!-- 4 KPI Quick Navigation Overview Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
             
-            <!-- Left 7 cols: Simulated Visual Snapshot Frame -->
-            <div class="lg:col-span-7 bg-slate-950 rounded-2xl border border-slate-800 overflow-hidden shadow-2xl p-4 relative group">
-                <!-- Scanline effect -->
-                <div class="absolute inset-0 bg-gradient-to-b from-transparent via-rose-500/5 to-transparent cctv-scanline pointer-events-none"></div>
-
-                <!-- Snapshot HUD Header -->
-                <div class="flex items-center justify-between text-xs font-mono mb-2">
-                    <div class="flex items-center space-x-2 bg-slate-900/90 border border-slate-800 px-3 py-1 rounded-lg">
-                        <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
-                        <span class="font-bold text-rose-300">CAM-09: Classroom 204 — 3:20 PM - Damaged Chair</span>
+            <!-- Card 1: Broadcast Announcements -->
+            <div class="bg-slate-900/80 border border-slate-800/90 rounded-3xl p-6 shadow-xl backdrop-blur-md flex flex-col justify-between hover:border-slate-700 transition-all group">
+                <div class="space-y-3">
+                    <div class="w-12 h-12 rounded-2xl bg-amber-500/15 text-amber-400 border border-amber-500/30 flex items-center justify-center shadow-lg shadow-amber-500/10 group-hover:scale-105 transition-transform">
+                        <i data-lucide="megaphone" class="w-6 h-6"></i>
                     </div>
-                    <span class="text-teal-400 bg-slate-900/90 border border-slate-800 px-2 py-1 rounded-lg">AI CONF: 98.2%</span>
+                    <div>
+                        <h3 class="text-base font-bold text-white tracking-tight">Campus Announcements</h3>
+                        <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+                            Publish real-time urgent notices, hostel advisories, and campus circulars.
+                        </p>
+                    </div>
                 </div>
-
-                <!-- SVG Visual Graphic of Damaged Chair Snapshot -->
-                <div class="w-full flex items-center justify-center my-3 bg-slate-950/90 rounded-xl border border-slate-900 p-2">
-                    <svg class="w-full h-44" viewBox="0 0 500 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <!-- Classroom Background Grid -->
-                        <rect x="10" y="10" width="480" height="180" rx="8" fill="#080f24" stroke="#1e293b" stroke-width="1.5"/>
-                        <line x1="10" y1="130" x2="490" y2="130" stroke="#1e293b" stroke-width="1.5"/>
-                        <rect x="40" y="40" width="120" height="60" rx="4" fill="#0e172e" stroke="#334155" stroke-width="1"/>
-                        <text x="55" y="75" fill="#64748b" font-family="'JetBrains Mono', monospace" font-size="10">WHITEBOARD</text>
-
-                        <!-- Desk 1 & Chair -->
-                        <rect x="200" y="70" width="100" height="50" rx="3" fill="#172554" stroke="#3b82f6" stroke-width="1"/>
-                        
-                        <!-- AI Red Bounding Box on Damaged Chair -->
-                        <rect x="310" y="60" width="150" height="110" rx="4" fill="rgba(244, 63, 94, 0.18)" stroke="#f43f5e" stroke-width="2" stroke-dasharray="6 3" class="animate-pulse"/>
-                        <rect x="310" y="38" width="150" height="22" rx="3" fill="#e11d48"/>
-                        <text x="316" y="53" fill="#ffffff" font-family="'JetBrains Mono', monospace" font-size="10" font-weight="bold">AI: FRACTURED CHAIR 98.2%</text>
-
-                        <!-- Damaged Chair Graphic -->
-                        <rect x="340" y="100" width="60" height="12" rx="2" fill="#ef4444" stroke="#fca5a5" stroke-width="1.5" transform="rotate(8 340 100)"/>
-                        <line x1="340" y1="100" x2="330" y2="70" stroke="#f87171" stroke-width="3" stroke-linecap="round"/>
-                        <line x1="330" y1="70" x2="370" y2="65" stroke="#f87171" stroke-width="3" stroke-linecap="round" stroke-dasharray="3 3"/>
-                        <line x1="345" y1="112" x2="335" y2="155" stroke="#ef4444" stroke-width="3" stroke-linecap="round"/>
-                        <line x1="395" y1="112" x2="415" y2="150" stroke="#ef4444" stroke-width="3" stroke-linecap="round" transform="rotate(-15 395 112)"/>
-                        <circle cx="415" cy="150" r="3" fill="#facc15"/>
-                    </svg>
-                </div>
-
-                <div class="flex items-center justify-between text-[11px] font-mono text-slate-400 bg-slate-900/80 p-2 rounded-xl border border-slate-800">
-                    <span class="text-rose-400 font-semibold flex items-center gap-1">
-                        <i data-lucide="map-pin" class="w-3 h-3"></i>
-                        <span>Classroom 204 — 3:20 PM - Damaged Chair</span>
-                    </span>
-                    <span class="text-slate-500">Student: Sameer Verma (SST-2023-CS042)</span>
+                <div class="pt-5 mt-4 border-t border-slate-800/80">
+                    <button onclick="switchAdminTab('announcements')" class="w-full py-2.5 px-4 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 text-xs font-bold flex items-center justify-between border border-amber-500/30 transition-all cursor-pointer">
+                        <span>Broadcast Center</span>
+                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </button>
                 </div>
             </div>
 
-            <!-- Right 5 cols: Review & Disciplinary Fine Action Panel -->
-            <div class="lg:col-span-5 bg-slate-950/90 border border-slate-800 rounded-2xl p-5 space-y-4">
-                <div class="flex items-start justify-between">
+            <!-- Card 2: Events & Attendee Rosters -->
+            <div class="bg-slate-900/80 border border-slate-800/90 rounded-3xl p-6 shadow-xl backdrop-blur-md flex flex-col justify-between hover:border-slate-700 transition-all group">
+                <div class="space-y-3">
+                    <div class="w-12 h-12 rounded-2xl bg-teal-500/15 text-teal-400 border border-teal-500/30 flex items-center justify-center shadow-lg shadow-teal-500/10 group-hover:scale-105 transition-transform">
+                        <i data-lucide="calendar" class="w-6 h-6"></i>
+                    </div>
                     <div>
-                        <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">
-                            INCIDENT CCTV-204
-                        </span>
-                        <h3 class="text-base font-bold text-white mt-1.5">Damage Review & Penalty</h3>
-                    </div>
-                    <span class="text-xs font-mono text-slate-500">3:20 PM</span>
-                </div>
-
-                <p class="text-xs text-slate-300 leading-relaxed">
-                    AI Vision identified broken furniture leg and severed bracket in Classroom 204 assigned to student <b>Sameer Verma</b>.
-                </p>
-
-                <div class="p-3 rounded-xl bg-slate-900/90 border border-slate-800 text-xs space-y-1 text-slate-300">
-                    <div class="flex justify-between">
-                        <span>Suggested Fine:</span>
-                        <span class="font-mono font-bold text-rose-400">₹500</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span>Target Student:</span>
-                        <span class="font-semibold text-slate-200">Sameer Verma (CS23B089)</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span>Resulting Status:</span>
-                        <span class="font-bold text-rose-400">Action Required 🔴</span>
+                        <h3 class="text-base font-bold text-white tracking-tight">Events & RSVP Rosters</h3>
+                        <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+                            Monitor registered student attendees and manage event schedules.
+                        </p>
                     </div>
                 </div>
+                <div class="pt-5 mt-4 border-t border-slate-800/80">
+                    <button onclick="switchAdminTab('events')" class="w-full py-2.5 px-4 rounded-xl bg-teal-500/15 hover:bg-teal-500/25 text-teal-300 text-xs font-bold flex items-center justify-between border border-teal-500/30 transition-all cursor-pointer">
+                        <span>Manage Events</span>
+                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
 
-                <!-- REVIEW & ISSUE FINE BUTTON -->
-                <div class="pt-2">
-                    <button onclick="issueCctvFine()" id="btnIssueCctvFine"
-                        class="w-full py-3 px-4 bg-gradient-to-r from-rose-600 via-rose-500 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-rose-600/30 flex items-center justify-center space-x-2 transition-all transform active:scale-95">
-                        <i data-lucide="gavel" class="w-4 h-4"></i>
-                        <span>Review & Issue Fine ₹500</span>
+            <!-- Card 3: User Management -->
+            <div class="bg-slate-900/80 border border-slate-800/90 rounded-3xl p-6 shadow-xl backdrop-blur-md flex flex-col justify-between hover:border-slate-700 transition-all group">
+                <div class="space-y-3">
+                    <div class="w-12 h-12 rounded-2xl bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 flex items-center justify-center shadow-lg shadow-cyan-500/10 group-hover:scale-105 transition-transform">
+                        <i data-lucide="users" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-white tracking-tight">User Management</h3>
+                        <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+                            Create campus accounts, toggle active status, and audit permissions.
+                        </p>
+                    </div>
+                </div>
+                <div class="pt-5 mt-4 border-t border-slate-800/80">
+                    <button onclick="switchAdminTab('users')" class="w-full py-2.5 px-4 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 text-xs font-bold flex items-center justify-between border border-cyan-500/30 transition-all cursor-pointer">
+                        <span>Manage Users</span>
+                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Card 4: Problem Tickets & Solvers -->
+            <div class="bg-slate-900/80 border border-slate-800/90 rounded-3xl p-6 shadow-xl backdrop-blur-md flex flex-col justify-between hover:border-slate-700 transition-all group">
+                <div class="space-y-3">
+                    <div class="w-12 h-12 rounded-2xl bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 flex items-center justify-center shadow-lg shadow-indigo-500/10 group-hover:scale-105 transition-transform">
+                        <i data-lucide="wrench" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-white tracking-tight">Problem Dispatch</h3>
+                        <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+                            Dispatch board, solver roster management, and student feedback stream.
+                        </p>
+                    </div>
+                </div>
+                <div class="pt-5 mt-4 border-t border-slate-800/80">
+                    <button onclick="switchAdminTab('tickets')" class="w-full py-2.5 px-4 rounded-xl bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 text-xs font-bold flex items-center justify-between border border-indigo-500/30 transition-all cursor-pointer">
+                        <span>Dispatch Board</span>
+                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
                     </button>
                 </div>
             </div>
 
         </div>
-    </section>
 
-
-    <!-- ========================================================================= -->
-    <!-- SECTION 2: USER MANAGEMENT (View, Add, Activate/Deactivate, Delete) -->
-    <!-- ========================================================================= -->
-    <section class="bg-slate-900/80 border border-slate-800/90 rounded-3xl p-6 md:p-7 shadow-2xl backdrop-blur-md space-y-6">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
-            <div class="flex items-center space-x-3.5">
-                <div class="w-11 h-11 rounded-2xl bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 flex items-center justify-center shadow-lg shadow-cyan-500/10">
-                    <i data-lucide="shield-alert" class="w-6 h-6"></i>
+        <!-- CCTV DAMAGE REVIEW & DISCIPLINARY FINE PANEL -->
+        <section class="bg-slate-900/80 border border-slate-800/90 rounded-3xl p-6 md:p-7 shadow-2xl backdrop-blur-md relative overflow-hidden">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-800">
+                <div class="flex items-center space-x-3.5">
+                    <div class="w-11 h-11 rounded-2xl bg-rose-500/15 text-rose-400 border border-rose-500/30 flex items-center justify-center shadow-lg shadow-rose-500/10">
+                        <i data-lucide="video" class="w-6 h-6 animate-pulse"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <h2 class="text-xl font-bold tracking-tight text-white">CCTV Damage Review Hub</h2>
+                            <span class="px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[10px] font-mono font-bold tracking-wider uppercase animate-pulse">
+                                AI OPTICAL SURVEILLANCE
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-0.5">Automated visual anomaly & property damage detection</p>
+                    </div>
                 </div>
-                <div>
-                    <h2 class="text-xl font-bold tracking-tight text-white">Campus User Management</h2>
-                    <p class="text-xs text-slate-400">View registered accounts, create students/admins, toggle active status, or remove users</p>
-                </div>
-            </div>
 
-            <!-- ADD USER BUTTON -->
-            <button onclick="openAddUserModal()"
-                class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-slate-950 font-extrabold text-xs shadow-lg shadow-cyan-500/20 flex items-center space-x-2 transition-all transform active:scale-95">
-                <i data-lucide="user-plus" class="w-4 h-4"></i>
-                <span>➕ Add New User</span>
-            </button>
-        </div>
-
-        <!-- User Management Table -->
-        <div class="overflow-x-auto rounded-2xl border border-slate-800">
-            <table class="w-full text-left text-xs">
-                <thead class="bg-slate-950/90 text-slate-400 font-mono uppercase text-[11px] border-b border-slate-800">
-                    <tr>
-                        <th class="py-3.5 px-4 font-bold">User / Name</th>
-                        <th class="py-3.5 px-4 font-bold">Institutional Email</th>
-                        <th class="py-3.5 px-4 font-bold">Student/Staff ID</th>
-                        <th class="py-3.5 px-4 font-bold text-center">Role</th>
-                        <th class="py-3.5 px-4 font-bold text-center">Account Status</th>
-                        <th class="py-3.5 px-4 font-bold text-right">Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="usersTableBody" class="divide-y divide-slate-800/80 bg-slate-900/40">
-                    <!-- Populated via JS -->
-                </tbody>
-            </table>
-        </div>
-    </section>
-
-
-    <!-- ========================================================================= -->
-    <!-- SECTION 3: WORKER MANAGEMENT (CRUD) -->
-    <!-- ========================================================================= -->
-    <section class="bg-slate-900/80 border border-slate-800/90 rounded-3xl p-6 md:p-7 shadow-2xl backdrop-blur-md space-y-6">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
-            <div class="flex items-center space-x-3.5">
-                <div class="w-11 h-11 rounded-2xl bg-teal-500/15 text-teal-400 border border-teal-500/30 flex items-center justify-center shadow-lg shadow-teal-500/10">
-                    <i data-lucide="users-2" class="w-6 h-6"></i>
-                </div>
-                <div>
-                    <h2 class="text-xl font-bold tracking-tight text-white">Worker Management Directory</h2>
-                    <p class="text-xs text-slate-400">Manage campus technical solvers, ratings, skills, and workload</p>
+                <div class="flex items-center space-x-3 bg-slate-950/80 p-2.5 rounded-2xl border border-slate-800">
+                    <div class="text-right">
+                        <p class="text-[10px] uppercase font-bold text-slate-400">Target Student Standing</p>
+                        <span id="adminStudentStandingBadge" class="text-xs font-bold text-emerald-400">Good Standing 🟢</span>
+                    </div>
+                    <div class="border-l border-slate-800 pl-3">
+                        <p class="text-[10px] uppercase font-bold text-slate-400">Total Fines</p>
+                        <span id="adminStudentFineText" class="text-xs font-mono font-bold text-amber-400">₹0</span>
+                    </div>
                 </div>
             </div>
 
-            <!-- ADD WORKER BUTTON -->
-            <button onclick="openAddWorkerModal()"
-                class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-slate-950 font-extrabold text-xs shadow-lg shadow-teal-500/20 flex items-center space-x-2 transition-all transform active:scale-95">
-                <i data-lucide="user-plus" class="w-4 h-4"></i>
-                <span>➕ Add New Worker</span>
-            </button>
-        </div>
+            <!-- CCTV Snapshot Frame & Fine Action -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-6 items-center">
+                <div class="lg:col-span-7 bg-slate-950 rounded-2xl border border-slate-800 overflow-hidden shadow-2xl p-4 relative group">
+                    <div class="flex items-center justify-between text-xs font-mono mb-2">
+                        <div class="flex items-center space-x-2 bg-slate-900/90 border border-slate-800 px-3 py-1 rounded-lg">
+                            <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+                            <span class="font-bold text-rose-300">CAM-09: Classroom 204 — 3:20 PM - Damaged Chair</span>
+                        </div>
+                        <span class="text-teal-400 bg-slate-900/90 border border-slate-800 px-2 py-1 rounded-lg">AI CONF: 98.2%</span>
+                    </div>
 
-        <!-- Worker Management CRUD Table -->
-        <div class="overflow-x-auto rounded-2xl border border-slate-800">
-            <table class="w-full text-left text-xs">
-                <thead class="bg-slate-950/90 text-slate-400 font-mono uppercase text-[11px] border-b border-slate-800">
-                    <tr>
-                        <th class="py-3.5 px-4 font-bold">Worker ID & Name</th>
-                        <th class="py-3.5 px-4 font-bold">Skill Category</th>
-                        <th class="py-3.5 px-4 font-bold text-center">Tasks Solved</th>
-                        <th class="py-3.5 px-4 font-bold text-center">Rating</th>
-                        <th class="py-3.5 px-4 font-bold text-right">Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="workersTableBody" class="divide-y divide-slate-800/80 bg-slate-900/40">
-                    <!-- Populated via JS -->
-                </tbody>
-            </table>
-        </div>
-    </section>
+                    <div class="w-full flex items-center justify-center my-3 bg-slate-950/90 rounded-xl border border-slate-900 p-2">
+                        <svg class="w-full h-44" viewBox="0 0 500 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="10" y="10" width="480" height="180" rx="8" fill="#080f24" stroke="#1e293b" stroke-width="1.5"/>
+                            <line x1="10" y1="130" x2="490" y2="130" stroke="#1e293b" stroke-width="1.5"/>
+                            <rect x="40" y="40" width="120" height="60" rx="4" fill="#0e172e" stroke="#334155" stroke-width="1"/>
+                            <text x="55" y="75" fill="#64748b" font-family="'JetBrains Mono', monospace" font-size="10">WHITEBOARD</text>
+                            <rect x="200" y="70" width="100" height="50" rx="3" fill="#172554" stroke="#3b82f6" stroke-width="1"/>
+                            <rect x="310" y="60" width="150" height="110" rx="4" fill="rgba(244, 63, 94, 0.18)" stroke="#f43f5e" stroke-width="2" stroke-dasharray="6 3" class="animate-pulse"/>
+                            <rect x="310" y="38" width="150" height="22" rx="3" fill="#e11d48"/>
+                            <text x="316" y="53" fill="#ffffff" font-family="'JetBrains Mono', monospace" font-size="10" font-weight="bold">AI: FRACTURED CHAIR 98.2%</text>
+                            <rect x="340" y="100" width="60" height="12" rx="2" fill="#ef4444" stroke="#fca5a5" stroke-width="1.5" transform="rotate(8 340 100)"/>
+                            <line x1="340" y1="100" x2="330" y2="70" stroke="#f87171" stroke-width="3" stroke-linecap="round"/>
+                            <line x1="330" y1="70" x2="370" y2="65" stroke="#f87171" stroke-width="3" stroke-linecap="round" stroke-dasharray="3 3"/>
+                            <line x1="345" y1="112" x2="335" y2="155" stroke="#ef4444" stroke-width="3" stroke-linecap="round"/>
+                            <line x1="395" y1="112" x2="415" y2="150" stroke="#ef4444" stroke-width="3" stroke-linecap="round" transform="rotate(-15 395 112)"/>
+                            <circle cx="415" cy="150" r="3" fill="#facc15"/>
+                        </svg>
+                    </div>
 
-
-    <!-- ========================================================================= -->
-    <!-- SECTION 3: WORKER REVIEWS LOG (Student Ratings & Constructive Feedback) -->
-    <!-- ========================================================================= -->
-    <section class="bg-slate-900/80 border border-slate-800/90 rounded-3xl p-6 md:p-7 shadow-2xl backdrop-blur-md space-y-6">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
-            <div class="flex items-center space-x-3.5">
-                <div class="w-11 h-11 rounded-2xl bg-amber-500/15 text-amber-400 border border-amber-500/30 flex items-center justify-center shadow-lg shadow-amber-500/10">
-                    <i data-lucide="star" class="w-6 h-6"></i>
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between text-[11px] font-mono text-slate-400 bg-slate-900/80 p-2.5 rounded-xl border border-slate-800 gap-2">
+                        <span class="text-rose-400 font-semibold flex items-center gap-1">
+                            <i data-lucide="map-pin" class="w-3.5 h-3.5"></i>
+                            <span>Classroom 204 — 3:20 PM - Damaged Chair</span>
+                        </span>
+                        <span id="cctvIncidentTargetLabel" class="text-slate-300 font-medium">Selected Student: None</span>
+                    </div>
                 </div>
-                <div>
-                    <h2 class="text-xl font-bold tracking-tight text-white">Worker Reviews Log</h2>
-                    <p class="text-xs text-slate-400">Audit star ratings, response metrics, and constructive feedback from students</p>
+
+                <div class="lg:col-span-5 bg-slate-950/90 border border-slate-800 rounded-2xl p-5 space-y-4">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                                INCIDENT CCTV-204
+                            </span>
+                            <h3 class="text-base font-bold text-white mt-1.5">Damage Review & Penalty</h3>
+                        </div>
+                        <span class="text-xs font-mono text-slate-500">3:20 PM</span>
+                    </div>
+
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        AI Vision identified structural damage to furniture in Classroom 204. Select the responsible student from the database and set the fine amount.
+                    </p>
+
+                    <div class="space-y-3 pt-1">
+                        <!-- Dynamic Student Selection -->
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Select Student from Database *</label>
+                            <select id="cctvStudentSelect" onchange="onCctvStudentChange()" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 outline-none focus:border-rose-500 cursor-pointer">
+                                <option value="">Loading students from database...</option>
+                            </select>
+                        </div>
+
+                        <!-- Fine Amount Input & Quick Buttons -->
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Fine Amount (₹) *</label>
+                            <div class="flex items-center gap-2">
+                                <input type="number" id="cctvFineAmountInput" oninput="updateCctvFineButton()" min="1" step="1" value="500" placeholder="Fine amount (₹)..."
+                                    class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono font-bold text-rose-400 outline-none focus:border-rose-500">
+                                <div class="flex gap-1 flex-shrink-0">
+                                    <button type="button" onclick="setCctvFineAmount(250)" class="px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[10px] font-mono font-bold rounded-lg text-slate-300 hover:text-white transition-colors cursor-pointer">₹250</button>
+                                    <button type="button" onclick="setCctvFineAmount(500)" class="px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[10px] font-mono font-bold rounded-lg text-slate-300 hover:text-white transition-colors cursor-pointer">₹500</button>
+                                    <button type="button" onclick="setCctvFineAmount(1000)" class="px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[10px] font-mono font-bold rounded-lg text-slate-300 hover:text-white transition-colors cursor-pointer">₹1000</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Incident Summary Box -->
+                        <div class="p-3 rounded-xl bg-slate-900/90 border border-slate-800 text-xs space-y-1.5 text-slate-300">
+                            <div class="flex justify-between">
+                                <span class="text-slate-400">Target Student:</span>
+                                <span id="cctvTargetStudentText" class="font-semibold text-slate-200">Select a student above</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-400">Fine Amount:</span>
+                                <span id="cctvFineAmountDisplay" class="font-mono font-bold text-rose-400">₹500</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-400">Resulting Status:</span>
+                                <span class="font-bold text-rose-400">Action Required 🔴</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pt-2">
+                        <button onclick="openCctvReviewConfirmationModal()" id="btnIssueCctvFine"
+                            class="w-full py-3 px-4 bg-gradient-to-r from-rose-600 via-rose-500 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-rose-600/30 flex items-center justify-center space-x-2 transition-all transform active:scale-95 cursor-pointer">
+                            <i data-lucide="gavel" class="w-4 h-4"></i>
+                            <span id="btnIssueCctvFineText">Review & Issue Fine ₹500</span>
+                        </button>
+                    </div>
                 </div>
             </div>
-            <button onclick="fetchWorkerReviews()" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs flex items-center gap-1.5 transition-colors border border-slate-700">
-                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
-                <span>Refresh Reviews</span>
-            </button>
-        </div>
+        </section>
 
-        <!-- Dedicated Reviews Table -->
-        <div class="overflow-x-auto rounded-2xl border border-slate-800">
-            <table class="w-full text-left text-xs">
-                <thead class="bg-slate-950/90 text-slate-400 font-mono uppercase text-[11px] border-b border-slate-800">
-                    <tr>
-                        <th class="py-3.5 px-4 font-bold">Solver Name & Skill</th>
-                        <th class="py-3.5 px-4 font-bold">Student Reviewer</th>
-                        <th class="py-3.5 px-4 font-bold text-center">Response</th>
-                        <th class="py-3.5 px-4 font-bold text-center">Quality</th>
-                        <th class="py-3.5 px-4 font-bold text-center">Behavior</th>
-                        <th class="py-3.5 px-4 font-bold text-center">Avg Rating</th>
-                        <th class="py-3.5 px-4 font-bold">Constructive Feedback / Suggestions</th>
-                    </tr>
-                </thead>
-                <tbody id="reviewsTableBody" class="divide-y divide-slate-800/80 bg-slate-900/40">
-                    <!-- Populated via JS -->
-                </tbody>
-            </table>
-        </div>
-    </section>
-
-
-    <!-- ========================================================================= -->
-    <!-- SECTION 4: CAMPUS PROBLEM TICKETS DISPATCH BOARD -->
-    <!-- ========================================================================= -->
-    <section class="bg-slate-900/80 border border-slate-800/90 rounded-3xl p-6 md:p-7 shadow-2xl backdrop-blur-md space-y-6">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
-            <div class="flex items-center space-x-3.5">
-                <div class="w-11 h-11 rounded-2xl bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 flex items-center justify-center shadow-lg shadow-indigo-500/10">
-                    <i data-lucide="ticket" class="w-6 h-6"></i>
+        <!-- ===================================================================== -->
+        <!-- CAMPUS FINE MANAGEMENT & STUDENT FINE HISTORY -->
+        <!-- ===================================================================== -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            <!-- Left: Assign a Fine Form (5 cols) -->
+            <div class="lg:col-span-5 bg-slate-900/80 border border-slate-800/90 rounded-3xl p-6 md:p-7 shadow-2xl backdrop-blur-md space-y-5">
+                <div class="flex items-center space-x-3 pb-4 border-b border-slate-800">
+                    <div class="w-10 h-10 rounded-2xl bg-rose-500/15 text-rose-400 border border-rose-500/30 flex items-center justify-center font-bold shadow-lg shadow-rose-500/10">
+                        <i data-lucide="alert-circle" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-white tracking-tight">Assign Student Fine</h3>
+                        <p class="text-xs text-slate-400">Issue official campus penalty to selected student</p>
+                    </div>
                 </div>
-                <div>
-                    <h2 class="text-xl font-bold tracking-tight text-white">Campus Problem Tickets & Dispatch Board</h2>
-                    <p class="text-xs text-slate-400">Real-time status and solver assignment breakdown</p>
+
+                <form id="adminAssignFineForm" onsubmit="handleAdminAssignFine(event)" class="space-y-4">
+                    <!-- Student Selector Dropdown -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">Select Student from Database *</label>
+                        <select id="adminFineStudentSelect" required class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 outline-none focus:border-rose-500 cursor-pointer">
+                            <option value="">Loading students from database...</option>
+                        </select>
+                        <p class="text-[11px] text-slate-500 mt-1">Student details are populated directly from SQLite.</p>
+                    </div>
+
+                    <!-- Fine Amount Presets & Custom Input -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">Fine Amount (₹) *</label>
+                        <div class="grid grid-cols-4 gap-2 mb-2">
+                            <button type="button" onclick="setAdminFineAmount(100)" class="py-1.5 px-2 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-700 text-xs font-mono font-bold text-slate-300 hover:text-white transition-colors cursor-pointer">₹100</button>
+                            <button type="button" onclick="setAdminFineAmount(250)" class="py-1.5 px-2 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-700 text-xs font-mono font-bold text-slate-300 hover:text-white transition-colors cursor-pointer">₹250</button>
+                            <button type="button" onclick="setAdminFineAmount(500)" class="py-1.5 px-2 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-700 text-xs font-mono font-bold text-slate-300 hover:text-white transition-colors cursor-pointer">₹500</button>
+                            <button type="button" onclick="setAdminFineAmount(1000)" class="py-1.5 px-2 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-700 text-xs font-mono font-bold text-slate-300 hover:text-white transition-colors cursor-pointer">₹1000</button>
+                        </div>
+                        <input type="number" id="adminFineAmountInput" required min="1" step="1" value="500" placeholder="Enter fine amount..."
+                            class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs font-mono font-bold text-rose-400 placeholder-slate-500 outline-none focus:border-rose-500">
+                    </div>
+
+                    <!-- Fine Reason / Description -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">Reason / Infraction Description *</label>
+                        <textarea id="adminFineReasonInput" required rows="3" placeholder="e.g. Damage to classroom equipment, Library overdue, etc."
+                            class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-slate-100 placeholder-slate-500 outline-none focus:border-rose-500 resize-none"></textarea>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" id="btnAdminAssignFine"
+                        class="w-full py-3 px-4 bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-rose-600/30 flex items-center justify-center space-x-2 transition-all transform active:scale-95 cursor-pointer">
+                        <i data-lucide="gavel" class="w-4 h-4"></i>
+                        <span>Assign Fine & Update Standing</span>
+                    </button>
+                </form>
+            </div>
+
+            <!-- Right: View Student Fine History Inspector (7 cols) -->
+            <div class="lg:col-span-7 bg-slate-900/80 border border-slate-800/90 rounded-3xl p-6 md:p-7 shadow-2xl backdrop-blur-md space-y-5">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-800">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-2xl bg-amber-500/15 text-amber-400 border border-amber-500/30 flex items-center justify-center font-bold shadow-lg shadow-amber-500/10">
+                            <i data-lucide="history" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-base font-bold text-white tracking-tight">View Student Fine History</h3>
+                            <p class="text-xs text-slate-400">Inspect historical violations and balance ledger for any student</p>
+                        </div>
+                    </div>
+
+                    <button onclick="refreshAdminFineHistory()" title="Refresh Ledger"
+                        class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-colors self-start sm:self-auto flex items-center gap-1.5 cursor-pointer">
+                        <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                        <span>Refresh</span>
+                    </button>
+                </div>
+
+                <!-- Select Student to Inspect -->
+                <div class="bg-slate-950/70 p-4 rounded-2xl border border-slate-800 space-y-3">
+                    <label class="block text-xs font-semibold text-slate-300">Choose Student to Audit:</label>
+                    <select id="adminHistoryStudentSelect" onchange="onAdminHistoryStudentChange()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-slate-100 outline-none focus:border-amber-500 cursor-pointer">
+                        <option value="">Select a student...</option>
+                    </select>
+
+                    <!-- Student Summary Stats -->
+                    <div class="grid grid-cols-3 gap-3 pt-2">
+                        <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-2.5 text-center">
+                            <span class="text-[9px] font-bold uppercase text-slate-400">Total Fines</span>
+                            <p id="adminHistoryTotalCount" class="text-base font-black text-white font-mono mt-0.5">0</p>
+                        </div>
+                        <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-2.5 text-center">
+                            <span class="text-[9px] font-bold uppercase text-rose-400">Pending Amount</span>
+                            <p id="adminHistoryPendingSum" class="text-base font-black text-rose-400 font-mono mt-0.5">₹0</p>
+                        </div>
+                        <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-2.5 text-center">
+                            <span class="text-[9px] font-bold uppercase text-emerald-400">Paid Amount</span>
+                            <p id="adminHistoryPaidSum" class="text-base font-black text-emerald-400 font-mono mt-0.5">₹0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Student Fine History Table -->
+                <div class="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-950/60 max-h-64 overflow-y-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-900/90 text-slate-400 font-semibold border-b border-slate-800 text-[11px] sticky top-0">
+                            <tr>
+                                <th class="py-2.5 px-3">Fine ID</th>
+                                <th class="py-2.5 px-3">Reason</th>
+                                <th class="py-2.5 px-3">Amount</th>
+                                <th class="py-2.5 px-3">Date</th>
+                                <th class="py-2.5 px-3">Status</th>
+                                <th class="py-2.5 px-3">Paid Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminStudentHistoryTableBody" class="divide-y divide-slate-800/60 text-slate-300">
+                            <tr>
+                                <td colspan="6" class="py-6 text-center text-xs text-slate-500">
+                                    Select a student from the dropdown above to view fine history.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
-            <button onclick="fetchAdminTickets()" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors">
-                <i data-lucide="refresh-cw" class="w-4 h-4"></i>
-            </button>
+
         </div>
 
-        <!-- Tickets List -->
-        <div id="adminTicketsContainer" class="space-y-4">
-            <!-- Populated via JS -->
+        <!-- Master Campus Fines Ledger Table -->
+        <section class="bg-slate-900/80 border border-slate-800/90 rounded-3xl p-6 md:p-7 shadow-2xl backdrop-blur-md space-y-5">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+                <div class="flex items-center space-x-3.5">
+                    <div class="w-11 h-11 rounded-2xl bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 flex items-center justify-center shadow-lg shadow-indigo-500/10">
+                        <i data-lucide="receipt" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-white tracking-tight">Master Campus Fines Ledger</h3>
+                        <p class="text-xs text-slate-400">Comprehensive real-time log of all student penalties across campus</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-3">
+                    <button onclick="fetchAdminAllFines()" title="Refresh Master Fines Table"
+                        class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-colors flex items-center gap-1.5 cursor-pointer">
+                        <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                        <span>Refresh Master Ledger</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-950/60">
+                <table class="w-full text-left text-xs">
+                    <thead class="bg-slate-900/90 text-slate-400 font-semibold border-b border-slate-800 text-[11px]">
+                        <tr>
+                            <th class="py-3 px-4">Fine ID</th>
+                            <th class="py-3 px-4">Student</th>
+                            <th class="py-3 px-4">Reason / Infraction</th>
+                            <th class="py-3 px-4">Amount</th>
+                            <th class="py-3 px-4">Date Assigned</th>
+                            <th class="py-3 px-4">Payment Status</th>
+                            <th class="py-3 px-4">Date Settled</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminAllFinesTableBody" class="divide-y divide-slate-800/60 text-slate-300">
+                        <tr>
+                            <td colspan="7" class="py-8 text-center text-xs text-slate-400">
+                                Loading master campus fines...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </div>
+
+
+    <!-- ========================================================================= -->
+    <!-- TAB 2: DEDICATED ANNOUNCEMENTS MANAGEMENT PAGE -->
+    <!-- ========================================================================= -->
+    <div id="admin-section-announcements" class="hidden space-y-6 animate-fadeIn">
+        
+        <section class="bg-slate-900/80 border border-slate-800/90 rounded-3xl p-6 md:p-7 shadow-2xl backdrop-blur-md space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+                <div class="flex items-center space-x-3.5">
+                    <div class="w-11 h-11 rounded-2xl bg-amber-500/15 text-amber-400 border border-amber-500/30 flex items-center justify-center shadow-lg shadow-amber-500/10">
+                        <i data-lucide="megaphone" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold tracking-tight text-white">Campus Announcements & Broadcast Control</h2>
+                        <p class="text-xs text-slate-400">Publish urgent notices, academic alerts, and official campus circulars</p>
+                    </div>
+                </div>
+
+                <button onclick="fetchAdminAnnouncements()" title="Refresh Announcements"
+                    class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-colors self-start sm:self-auto flex items-center gap-1.5 cursor-pointer">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                    <span>Refresh</span>
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                <!-- Left: Publish Form (5 cols) -->
+                <div class="lg:col-span-5 bg-slate-950/70 border border-slate-800 rounded-2xl p-5 space-y-4">
+                    <div class="flex items-center space-x-2 text-xs font-bold text-white border-b border-slate-800 pb-2.5">
+                        <i data-lucide="send" class="w-4 h-4 text-amber-400"></i>
+                        <span>Create New Announcement</span>
+                    </div>
+
+                    <form id="createAnnouncementForm" onsubmit="submitCreateAnnouncement(event)" class="space-y-3.5">
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-300 mb-1">Announcement Title *</label>
+                            <input type="text" id="annTitle" required placeholder="e.g. Class Rescheduled or SST Hackathon"
+                                class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-100 placeholder-slate-500 outline-none focus:border-amber-500">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-300 mb-1">Category *</label>
+                                <select id="annCategory" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-100 outline-none focus:border-amber-500 cursor-pointer">
+                                    <option value="Academic">Academic</option>
+                                    <option value="Hostel">Hostel</option>
+                                    <option value="Events">Events</option>
+                                    <option value="General" selected>General</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-300 mb-1">Priority Level *</label>
+                                <select id="annPriority" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-100 outline-none focus:border-amber-500 cursor-pointer">
+                                    <option value="Normal" selected>Normal</option>
+                                    <option value="Important">Important (⚠️ Alert)</option>
+                                    <option value="Urgent">Urgent (🚨 Red Alert)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-300 mb-1">Target Audience</label>
+                                <select id="annAudience" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-100 outline-none focus:border-amber-500 cursor-pointer">
+                                    <option value="All" selected>All Campus</option>
+                                    <option value="Students">Students Only</option>
+                                    <option value="Hostellers">Hostel Residents</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-300 mb-1">Location / Venue</label>
+                                <input type="text" id="annVenue" placeholder="e.g. Innovation Lab 4"
+                                    class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-100 placeholder-slate-500 outline-none focus:border-amber-500">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-300 mb-1">Message / Details *</label>
+                            <textarea id="annContent" required rows="3" placeholder="Enter the complete announcement message..."
+                                class="w-full bg-slate-900 border border-slate-700/80 rounded-xl p-3 text-xs text-slate-100 placeholder-slate-500 outline-none focus:border-amber-500 resize-none"></textarea>
+                        </div>
+
+                        <button type="submit" id="btnSubmitAnnouncement"
+                            class="w-full py-2.5 px-4 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl shadow-lg shadow-amber-500/20 flex items-center justify-center space-x-2 transition-all text-xs cursor-pointer">
+                            <i data-lucide="send" class="w-4 h-4"></i>
+                            <span>Publish Announcement</span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Right: Active Announcements List (7 cols) -->
+                <div class="lg:col-span-7 space-y-3">
+                    <div class="flex items-center justify-between text-xs font-bold text-slate-300 pb-2 border-b border-slate-800">
+                        <span>Active Published Announcements</span>
+                        <span id="adminAnnouncementsCount" class="text-[11px] font-mono text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">0 Total</span>
+                    </div>
+
+                    <div id="adminAnnouncementsContainer" class="space-y-3 max-h-[460px] overflow-y-auto pr-1">
+                        <!-- Populated via JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+
+    <!-- ========================================================================= -->
+    <!-- TAB 3: DEDICATED EVENTS & RSVP DIRECTORY PAGE -->
+    <!-- ========================================================================= -->
+    <div id="admin-section-events" class="hidden space-y-6 animate-fadeIn">
+        
+        <section class="bg-slate-900/80 border border-slate-800/90 rounded-3xl p-6 md:p-7 shadow-2xl backdrop-blur-md space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+                <div class="flex items-center space-x-3.5">
+                    <div class="w-11 h-11 rounded-2xl bg-teal-500/15 text-teal-400 border border-teal-500/30 flex items-center justify-center shadow-lg shadow-teal-500/10">
+                        <i data-lucide="calendar-check-2" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold tracking-tight text-white">Campus Event RSVP & Registration Directory</h2>
+                        <p class="text-xs text-slate-400">View registered student attendees and capacity limits per scheduled event</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-3">
+                    <select id="adminEventSelect" onchange="onAdminEventSelected()"
+                        class="bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-teal-300 font-semibold outline-none focus:border-teal-500 cursor-pointer">
+                        <option value="">-- Select an Event to View Attendees --</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Event Details & Capacity Summary Card -->
+            <div id="eventRegistrationsSummary" class="p-4 rounded-2xl bg-slate-950/70 border border-slate-800 text-xs flex flex-wrap items-center justify-between gap-4">
+                <div>
+                    <span class="text-slate-500 uppercase text-[10px] font-bold">Selected Event</span>
+                    <h4 id="summaryEventTitle" class="text-sm font-bold text-white">Select an event from the dropdown above</h4>
+                </div>
+                <div class="flex items-center space-x-4 font-mono text-xs">
+                    <div>
+                        <span class="text-slate-500 text-[10px] block">Capacity</span>
+                        <span id="summaryEventCapacity" class="font-bold text-slate-300">--</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-500 text-[10px] block">Registered Count</span>
+                        <span id="summaryEventCount" class="font-bold text-teal-400">--</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Attendees Table -->
+            <div class="overflow-x-auto rounded-2xl border border-slate-800">
+                <table class="w-full text-left text-xs">
+                    <thead class="bg-slate-950/90 text-slate-400 font-mono uppercase text-[11px] border-b border-slate-800">
+                        <tr>
+                            <th class="py-3.5 px-4 font-bold">#</th>
+                            <th class="py-3.5 px-4 font-bold">Student Name</th>
+                            <th class="py-3.5 px-4 font-bold">Student ID / Roll</th>
+                            <th class="py-3.5 px-4 font-bold">Institutional Email</th>
+                            <th class="py-3.5 px-4 font-bold">Registration Timestamp</th>
+                        </tr>
+                    </thead>
+                    <tbody id="eventRegistrationsTableBody" class="divide-y divide-slate-800/80 bg-slate-900/40">
+                        <!-- Populated via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </div>
+
+
+    <!-- ========================================================================= -->
+    <!-- TAB 4: DEDICATED USER MANAGEMENT PAGE -->
+    <!-- ========================================================================= -->
+    <div id="admin-section-users" class="hidden space-y-6 animate-fadeIn">
+        
+        <section class="bg-slate-900/80 border border-slate-800/90 rounded-3xl p-6 md:p-7 shadow-2xl backdrop-blur-md space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+                <div class="flex items-center space-x-3.5">
+                    <div class="w-11 h-11 rounded-2xl bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 flex items-center justify-center shadow-lg shadow-cyan-500/10">
+                        <i data-lucide="shield-alert" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold tracking-tight text-white">Campus User Management</h2>
+                        <p class="text-xs text-slate-400">View registered accounts, create students/admins, toggle active status, or remove users</p>
+                    </div>
+                </div>
+
+                <button onclick="openAddUserModal()"
+                    class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-slate-950 font-extrabold text-xs shadow-lg shadow-cyan-500/20 flex items-center space-x-2 transition-all transform active:scale-95 cursor-pointer">
+                    <i data-lucide="user-plus" class="w-4 h-4"></i>
+                    <span>➕ Add New User</span>
+                </button>
+            </div>
+
+            <!-- User Management Table -->
+            <div class="overflow-x-auto rounded-2xl border border-slate-800">
+                <table class="w-full text-left text-xs">
+                    <thead class="bg-slate-950/90 text-slate-400 font-mono uppercase text-[11px] border-b border-slate-800">
+                        <tr>
+                            <th class="py-3.5 px-4 font-bold">User / Name</th>
+                            <th class="py-3.5 px-4 font-bold">Institutional Email</th>
+                            <th class="py-3.5 px-4 font-bold">Student/Staff ID</th>
+                            <th class="py-3.5 px-4 font-bold text-center">Role</th>
+                            <th class="py-3.5 px-4 font-bold text-center">Account Status</th>
+                            <th class="py-3.5 px-4 font-bold text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody" class="divide-y divide-slate-800/80 bg-slate-900/40">
+                        <!-- Populated via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </div>
+
+
+    <!-- ========================================================================= -->
+    <!-- TAB 5: DEDICATED PROBLEM TICKETS & DISPATCH BOARD PAGE -->
+    <!-- ========================================================================= -->
+    <div id="admin-section-tickets" class="hidden space-y-6 animate-fadeIn">
+        
+        <!-- Section: Problem Tickets Dispatch Board -->
+        <section class="bg-slate-900/80 border border-slate-800/90 rounded-3xl p-6 md:p-7 shadow-2xl backdrop-blur-md space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+                <div class="flex items-center space-x-3.5">
+                    <div class="w-11 h-11 rounded-2xl bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 flex items-center justify-center shadow-lg shadow-indigo-500/10">
+                        <i data-lucide="clipboard-list" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold tracking-tight text-white">Campus Problem Tickets & Dispatch Board</h2>
+                        <p class="text-xs text-slate-400">Real-time resolution workflow and technical solver assignments</p>
+                    </div>
+                </div>
+
+                <button onclick="fetchAdminTickets()" title="Refresh Dispatch Board"
+                    class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-colors self-start sm:self-auto flex items-center gap-1.5 cursor-pointer">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                    <span>Sync</span>
+                </button>
+            </div>
+
+            <!-- Tickets Table -->
+            <div class="overflow-x-auto rounded-2xl border border-slate-800">
+                <table class="w-full text-left text-xs">
+                    <thead class="bg-slate-950/90 text-slate-400 font-mono uppercase text-[11px] border-b border-slate-800">
+                        <tr>
+                            <th class="py-3.5 px-4 font-bold">Ticket ID</th>
+                            <th class="py-3.5 px-4 font-bold">Issue Title / Category</th>
+                            <th class="py-3.5 px-4 font-bold">Location</th>
+                            <th class="py-3.5 px-4 font-bold">Assigned Solver</th>
+                            <th class="py-3.5 px-4 font-bold text-center">Status</th>
+                            <th class="py-3.5 px-4 font-bold text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminTicketsTableBody" class="divide-y divide-slate-800/80 bg-slate-900/40">
+                        <!-- Populated via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Section: Worker Management Directory -->
+        <section class="bg-slate-900/80 border border-slate-800/90 rounded-3xl p-6 md:p-7 shadow-2xl backdrop-blur-md space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+                <div class="flex items-center space-x-3.5">
+                    <div class="w-11 h-11 rounded-2xl bg-teal-500/15 text-teal-400 border border-teal-500/30 flex items-center justify-center shadow-lg shadow-teal-500/10">
+                        <i data-lucide="users-2" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold tracking-tight text-white">Worker Management Directory</h2>
+                        <p class="text-xs text-slate-400">Manage campus technical solvers, ratings, skills, and workload</p>
+                    </div>
+                </div>
+
+                <button onclick="openAddWorkerModal()"
+                    class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-slate-950 font-extrabold text-xs shadow-lg shadow-teal-500/20 flex items-center space-x-2 transition-all transform active:scale-95 cursor-pointer">
+                    <i data-lucide="user-plus" class="w-4 h-4"></i>
+                    <span>➕ Add New Solver</span>
+                </button>
+            </div>
+
+            <!-- Workers Table -->
+            <div class="overflow-x-auto rounded-2xl border border-slate-800">
+                <table class="w-full text-left text-xs">
+                    <thead class="bg-slate-950/90 text-slate-400 font-mono uppercase text-[11px] border-b border-slate-800">
+                        <tr>
+                            <th class="py-3.5 px-4 font-bold">Solver Name</th>
+                            <th class="py-3.5 px-4 font-bold">Category</th>
+                            <th class="py-3.5 px-4 font-bold text-center">Cumulative Rating</th>
+                            <th class="py-3.5 px-4 font-bold text-center">Tasks Solved</th>
+                            <th class="py-3.5 px-4 font-bold">Contact</th>
+                            <th class="py-3.5 px-4 font-bold text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="workersTableBody" class="divide-y divide-slate-800/80 bg-slate-900/40">
+                        <!-- Populated via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Section: Student Reviews & Solver Quality Stream -->
+        <section class="bg-slate-900/80 border border-slate-800/90 rounded-3xl p-6 md:p-7 shadow-2xl backdrop-blur-md space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+                <div class="flex items-center space-x-3.5">
+                    <div class="w-11 h-11 rounded-2xl bg-amber-500/15 text-amber-400 border border-amber-500/30 flex items-center justify-center shadow-lg shadow-amber-500/10">
+                        <i data-lucide="star" class="w-6 h-6 text-amber-400"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold tracking-tight text-white">Student Review Logs & Feedback Stream</h2>
+                        <p class="text-xs text-slate-400">Real-time ratings across response time, technical quality, and courtesy</p>
+                    </div>
+                </div>
+
+                <button onclick="fetchWorkerReviews()" title="Refresh Reviews"
+                    class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-colors self-start sm:self-auto flex items-center gap-1.5 cursor-pointer">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                    <span>Refresh Logs</span>
+                </button>
+            </div>
+
+            <!-- Reviews Feed -->
+            <div id="adminReviewsFeed" class="space-y-3.5 max-h-96 overflow-y-auto pr-1">
+                <!-- Populated via JS from SQLite -->
+            </div>
+        </section>
+
+    </div>
+
+
+    <!-- ========================================================================= -->
+    <!-- TAB 6: DEDICATED ADMIN PROFILE PAGE -->
+    <!-- ========================================================================= -->
+    <div id="admin-section-profile" class="hidden space-y-6 animate-fadeIn">
+        
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            <!-- Admin Profile Details (7 cols) -->
+            <div class="lg:col-span-7 bg-slate-900/80 border border-slate-800/90 rounded-3xl p-6 md:p-7 shadow-xl backdrop-blur-md space-y-6">
+                <div class="flex items-center space-x-4 pb-5 border-b border-slate-800">
+                    <div class="w-16 h-16 rounded-3xl bg-gradient-to-tr from-indigo-500 via-purple-600 to-teal-400 flex items-center justify-center font-black text-slate-950 text-2xl shadow-xl shadow-indigo-500/20">
+                        AD
+                    </div>
+                    <div>
+                        <div class="flex items-center space-x-2.5">
+                            <h2 class="text-xl font-extrabold text-white">{{ session.get('name', 'Campus Administrator') }}</h2>
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
+                                Campus Admin
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-400 font-mono mt-0.5">{{ session.get('email', 'admin@sst.scaler.com') }}</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                    <div class="bg-slate-950/70 border border-slate-800 rounded-2xl p-4 space-y-1">
+                        <span class="text-slate-500 font-semibold uppercase text-[10px]">Staff ID</span>
+                        <p class="text-sm font-bold text-white font-mono">{{ session.get('student_id', 'SST-FACULTY-01') }}</p>
+                    </div>
+
+                    <div class="bg-slate-950/70 border border-slate-800 rounded-2xl p-4 space-y-1">
+                        <span class="text-slate-500 font-semibold uppercase text-[10px]">Portal Role</span>
+                        <p class="text-sm font-bold text-indigo-300">Administrator</p>
+                    </div>
+
+                    <div class="bg-slate-950/70 border border-slate-800 rounded-2xl p-4 space-y-1">
+                        <span class="text-slate-500 font-semibold uppercase text-[10px]">Institutional Domain</span>
+                        <p class="text-sm font-bold text-teal-400 font-mono">@sst.scaler.com</p>
+                    </div>
+
+                    <div class="bg-slate-950/70 border border-slate-800 rounded-2xl p-4 space-y-1">
+                        <span class="text-slate-500 font-semibold uppercase text-[10px]">Security Clearance</span>
+                        <p class="text-sm font-bold text-emerald-400">Level 5 (Full CCTV & Broadcast)</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Privileges & Controls (5 cols) -->
+            <div class="lg:col-span-5 bg-slate-900/80 border border-slate-800/90 rounded-3xl p-6 md:p-7 shadow-xl backdrop-blur-md space-y-5">
+                <div class="flex items-center space-x-3 pb-4 border-b border-slate-800">
+                    <div class="w-10 h-10 rounded-xl bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 flex items-center justify-center font-bold">
+                        🛡️
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-white tracking-tight">Privileges & Permissions</h3>
+                        <p class="text-xs text-slate-400">Role-Based Access Control configuration</p>
+                    </div>
+                </div>
+
+                <div class="space-y-3 text-xs">
+                    <div class="p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800 flex items-center justify-between">
+                        <span class="text-slate-300 font-medium">CCTV Damage & Penalty Review</span>
+                        <span class="text-emerald-400 font-bold">Authorized ✓</span>
+                    </div>
+                    <div class="p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800 flex items-center justify-between">
+                        <span class="text-slate-300 font-medium">Campus Broadcast Announcements</span>
+                        <span class="text-emerald-400 font-bold">Authorized ✓</span>
+                    </div>
+                    <div class="p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800 flex items-center justify-between">
+                        <span class="text-slate-300 font-medium">User CRUD & Role Assignments</span>
+                        <span class="text-emerald-400 font-bold">Authorized ✓</span>
+                    </div>
+                    <div class="p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800 flex items-center justify-between">
+                        <span class="text-slate-300 font-medium">Worker Allocation & Ratings Stream</span>
+                        <span class="text-emerald-400 font-bold">Authorized ✓</span>
+                    </div>
+                </div>
+            </div>
+
         </div>
-    </section>
+
+    </div>
 
 </div>
 
@@ -306,7 +865,7 @@
                 </div>
                 <h3 class="text-base font-bold text-white">Add New Technical Solver</h3>
             </div>
-            <button onclick="closeAddWorkerModal()" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800">
+            <button onclick="closeAddWorkerModal()" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer">
                 <i data-lucide="x" class="w-4 h-4"></i>
             </button>
         </div>
@@ -319,28 +878,34 @@
             </div>
 
             <div>
-                <label class="block text-xs font-semibold text-slate-300 mb-1">Skill Category *</label>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Technical Category *</label>
                 <select id="addWorkerCategory" required
                     class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-slate-100 outline-none focus:border-teal-500 cursor-pointer">
                     <option value="Electrical">⚡ Electrical</option>
                     <option value="IT">📶 IT & Network</option>
-                    <option value="Hardware">🔧 Hardware & Equipment</option>
-                    <option value="Plumbing">🚰 Plumbing</option>
-                    <option value="Civil">🚪 Civil & Infrastructure</option>
+                    <option value="Hardware">🔧 Hardware</option>
                 </select>
             </div>
 
-            <div class="p-3 rounded-xl bg-slate-950/70 border border-slate-800 text-[11px] text-slate-400 space-y-1">
-                <p>⭐ <b>Default Initial Rating:</b> 5.0 (Top tier)</p>
-                <p>📦 <b>Default Tasks Solved:</b> 0</p>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Phone</label>
+                    <input type="text" id="addWorkerPhone" placeholder="+91 98765 43210"
+                        class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-slate-100 placeholder-slate-500 outline-none focus:border-teal-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Email</label>
+                    <input type="email" id="addWorkerEmail" placeholder="solver@sst.scaler.com"
+                        class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-slate-100 placeholder-slate-500 outline-none focus:border-teal-500">
+                </div>
             </div>
 
             <div class="flex justify-end space-x-2 pt-2 border-t border-slate-800">
-                <button type="button" onclick="closeAddWorkerModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold">
+                <button type="button" onclick="closeAddWorkerModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold cursor-pointer">
                     Cancel
                 </button>
-                <button type="submit" class="px-4 py-2 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs shadow-lg shadow-teal-500/20">
-                    ➕ Create Worker
+                <button type="submit" class="px-4 py-2 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs shadow-lg shadow-teal-500/20 cursor-pointer">
+                    ➕ Add Worker
                 </button>
             </div>
         </form>
@@ -355,12 +920,12 @@
     <div class="bg-slate-900 border border-slate-700/80 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 relative">
         <div class="flex items-center justify-between border-b border-slate-800 pb-3">
             <div class="flex items-center space-x-2.5">
-                <div class="w-9 h-9 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center">
+                <div class="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center">
                     <i data-lucide="edit-3" class="w-4 h-4"></i>
                 </div>
-                <h3 class="text-base font-bold text-white">Edit Worker Details</h3>
+                <h3 class="text-base font-bold text-white">Edit Solver Details</h3>
             </div>
-            <button onclick="closeEditWorkerModal()" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800">
+            <button onclick="closeEditWorkerModal()" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer">
                 <i data-lucide="x" class="w-4 h-4"></i>
             </button>
         </div>
@@ -371,33 +936,38 @@
             <div>
                 <label class="block text-xs font-semibold text-slate-300 mb-1">Worker Name *</label>
                 <input type="text" id="editWorkerName" required
-                    class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-slate-100 outline-none focus:border-indigo-500">
+                    class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-slate-100 outline-none focus:border-amber-500">
             </div>
 
             <div>
-                <label class="block text-xs font-semibold text-slate-300 mb-1">Skill Category *</label>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Technical Category *</label>
                 <select id="editWorkerCategory" required
-                    class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-slate-100 outline-none focus:border-indigo-500 cursor-pointer">
+                    class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-slate-100 outline-none focus:border-amber-500 cursor-pointer">
                     <option value="Electrical">⚡ Electrical</option>
                     <option value="IT">📶 IT & Network</option>
-                    <option value="Hardware">🔧 Hardware & Equipment</option>
-                    <option value="Plumbing">🚰 Plumbing</option>
-                    <option value="Civil">🚪 Civil & Infrastructure</option>
+                    <option value="Hardware">🔧 Hardware</option>
                 </select>
             </div>
 
-            <div>
-                <label class="block text-xs font-semibold text-slate-300 mb-1">Rating (⭐ 1.0 - 5.0)</label>
-                <input type="number" step="0.1" min="1.0" max="5.0" id="editWorkerRating"
-                    class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-slate-100 outline-none focus:border-indigo-500">
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Phone</label>
+                    <input type="text" id="editWorkerPhone"
+                        class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-slate-100 outline-none focus:border-amber-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Email</label>
+                    <input type="email" id="editWorkerEmail"
+                        class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-slate-100 outline-none focus:border-amber-500">
+                </div>
             </div>
 
             <div class="flex justify-end space-x-2 pt-2 border-t border-slate-800">
-                <button type="button" onclick="closeEditWorkerModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold">
+                <button type="button" onclick="closeEditWorkerModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold cursor-pointer">
                     Cancel
                 </button>
-                <button type="submit" class="px-4 py-2 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white font-bold text-xs shadow-lg shadow-indigo-500/20">
-                    💾 Save Changes
+                <button type="submit" class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/20 cursor-pointer">
+                    💾 Update Worker
                 </button>
             </div>
         </form>
@@ -415,9 +985,9 @@
                 <div class="w-9 h-9 rounded-xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 flex items-center justify-center">
                     <i data-lucide="user-plus" class="w-4 h-4"></i>
                 </div>
-                <h3 class="text-base font-bold text-white">Add New Campus User</h3>
+                <h3 class="text-base font-bold text-white">Create New Campus User</h3>
             </div>
-            <button onclick="closeAddUserModal()" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800">
+            <button onclick="closeAddUserModal()" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer">
                 <i data-lucide="x" class="w-4 h-4"></i>
             </button>
         </div>
@@ -433,7 +1003,6 @@
                 <label class="block text-xs font-semibold text-slate-300 mb-1">Institutional Email (@sst.scaler.com) *</label>
                 <input type="email" id="addUserEmail" required placeholder="priya.sharma@sst.scaler.com"
                     class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-slate-100 placeholder-slate-500 outline-none focus:border-cyan-500 font-mono">
-                <p class="text-[10px] text-cyan-400/80 mt-1 font-mono">Must strictly end with @sst.scaler.com</p>
             </div>
 
             <div class="grid grid-cols-2 gap-3">
@@ -461,14 +1030,73 @@
             </div>
 
             <div class="flex justify-end space-x-2 pt-2 border-t border-slate-800">
-                <button type="button" onclick="closeAddUserModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold">
+                <button type="button" onclick="closeAddUserModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold cursor-pointer">
                     Cancel
                 </button>
-                <button type="submit" class="px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs shadow-lg shadow-cyan-500/20">
+                <button type="submit" class="px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs shadow-lg shadow-cyan-500/20 cursor-pointer">
                     ➕ Create User
                 </button>
             </div>
         </form>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- MODAL: CCTV DAMAGE REVIEW & PENALTY CONFIRMATION STEP -->
+<!-- ========================================================================= -->
+<div id="cctvReviewModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md animate-fadeIn">
+    <div class="bg-slate-900 border border-rose-500/40 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5 relative">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div class="flex items-center space-x-2.5">
+                <div class="w-9 h-9 rounded-xl bg-rose-500/20 text-rose-400 border border-rose-500/30 flex items-center justify-center font-bold">
+                    <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-white">Confirm Disciplinary Penalty</h3>
+                    <p class="text-xs text-slate-400 font-mono">INCIDENT CCTV-204</p>
+                </div>
+            </div>
+            <button onclick="closeCctvReviewConfirmationModal()" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+
+        <div class="space-y-3 text-xs bg-slate-950/80 p-4 rounded-2xl border border-slate-800">
+            <div class="flex justify-between pb-2 border-b border-slate-800/80">
+                <span class="text-slate-400">Target Student:</span>
+                <span id="modalCctvStudentName" class="font-bold text-white">-</span>
+            </div>
+            <div class="flex justify-between pb-2 border-b border-slate-800/80">
+                <span class="text-slate-400">Student ID / Email:</span>
+                <span id="modalCctvStudentId" class="font-mono text-slate-300">-</span>
+            </div>
+            <div class="flex justify-between pb-2 border-b border-slate-800/80">
+                <span class="text-slate-400">Infraction Reason:</span>
+                <span class="font-medium text-slate-200 text-right max-w-[200px]">Classroom 204 — 3:20 PM - Damaged Chair</span>
+            </div>
+            <div class="flex justify-between pb-2 border-b border-slate-800/80">
+                <span class="text-slate-400">Fine Amount:</span>
+                <span id="modalCctvFineAmount" class="font-mono font-bold text-rose-400 text-sm">₹500</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-slate-400">Resulting Disciplinary Status:</span>
+                <span class="font-bold text-rose-400">Action Required 🔴</span>
+            </div>
+        </div>
+
+        <p class="text-[11px] text-slate-400 leading-relaxed">
+            This fine will be saved to the database, charged against the student's account, and logged in their permanent Fine History.
+        </p>
+
+        <div class="flex items-center justify-end space-x-2 pt-2 border-t border-slate-800">
+            <button type="button" onclick="closeCctvReviewConfirmationModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold cursor-pointer">
+                Cancel
+            </button>
+            <button type="button" onclick="confirmIssueCctvFine()" id="btnConfirmIssueCctvFine" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-lg shadow-rose-600/30 flex items-center gap-1.5 cursor-pointer">
+                <i data-lucide="check" class="w-4 h-4"></i>
+                <span>Confirm & Issue Penalty</span>
+            </button>
+        </div>
     </div>
 </div>
 {% endblock %}

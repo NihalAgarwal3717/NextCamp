@@ -8,6 +8,9 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "nextcamp_secret_key_scaler_sst_2026_prod")
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["SESSION_COOKIE_NAME"] = "nextcamp_session"
 DB_PATH = os.environ.get("NEXTCAMP_DB", os.path.join(os.path.dirname(__file__), "nextcamp.db"))
 
 
@@ -61,7 +64,30 @@ def init_db():
             date TEXT NOT NULL,
             start_time TEXT NOT NULL,
             end_time TEXT NOT NULL,
-            description TEXT
+            description TEXT,
+            capacity INTEGER DEFAULT 100
+        )
+    """)
+
+    # Ensure capacity column exists if upgrading existing DB
+    cursor.execute("PRAGMA table_info(events)")
+    event_cols = [col[1] for col in cursor.fetchall()]
+    if "capacity" not in event_cols:
+        cursor.execute("ALTER TABLE events ADD COLUMN capacity INTEGER DEFAULT 100")
+
+    # 2b. Event Registrations (RSVP) Table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS event_registrations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            event_id TEXT NOT NULL,
+            user_id INTEGER NOT NULL,
+            student_name TEXT NOT NULL,
+            student_id TEXT,
+            student_email TEXT NOT NULL,
+            registered_at TEXT NOT NULL,
+            UNIQUE(event_id, user_id),
+            FOREIGN KEY(event_id) REFERENCES events(id) ON DELETE CASCADE,
+            FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
         )
     """)
 
@@ -138,13 +164,46 @@ def init_db():
             title TEXT NOT NULL,
             content TEXT NOT NULL,
             category TEXT NOT NULL,
+            priority TEXT NOT NULL DEFAULT 'Normal',
+            audience TEXT DEFAULT 'All',
             badge_color TEXT,
-            date TEXT NOT NULL,
+            date TEXT,
             time TEXT,
             venue TEXT,
-            organizer TEXT
+            organizer TEXT,
+            created_by TEXT,
+            created_at TEXT
         )
     """)
+
+    # 6. Fines & Disciplinary Tracking Table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS fines (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            student_id TEXT,
+            student_name TEXT NOT NULL,
+            student_email TEXT NOT NULL,
+            amount INTEGER NOT NULL,
+            reason TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'Pending',
+            created_at TEXT NOT NULL,
+            paid_at TEXT,
+            FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+    """)
+
+    # Ensure columns exist if upgrading existing DB
+    cursor.execute("PRAGMA table_info(announcements)")
+    ann_cols = [col[1] for col in cursor.fetchall()]
+    if "priority" not in ann_cols:
+        cursor.execute("ALTER TABLE announcements ADD COLUMN priority TEXT DEFAULT 'Normal'")
+    if "audience" not in ann_cols:
+        cursor.execute("ALTER TABLE announcements ADD COLUMN audience TEXT DEFAULT 'All'")
+    if "created_by" not in ann_cols:
+        cursor.execute("ALTER TABLE announcements ADD COLUMN created_by TEXT")
+    if "created_at" not in ann_cols:
+        cursor.execute("ALTER TABLE announcements ADD COLUMN created_at TEXT")
 
     # Seed Default Users (Initial Baseline)
     cursor.execute("SELECT COUNT(*) FROM users")
@@ -212,33 +271,6 @@ def init_db():
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, default_reviews)
 
-    # Seed Alerts
-    cursor.execute("SELECT COUNT(*) FROM alerts")
-    if cursor.fetchone()[0] == 0:
-        default_alerts = [
-            ("ALT-01", "URGENT: Class Rescheduled - CS302 Advanced Algorithms", "CS302 class scheduled for 2:00 PM in Classroom 204 has been moved to Innovation Lab 4 due to emergency AC maintenance. Attendance is mandatory.", "danger", "Classroom 204 &rarr; Innovation Lab 4", "Today, 1:45 PM", 1),
-            ("ALT-02", "Hostel Water Valve Maintenance Notice", "Secondary pump line maintenance in Hostel Block B from 4:30 PM to 6:00 PM. Reserve tanks are online.", "warning", "Hostel Block B", "Today, 11:20 AM", 1)
-        ]
-        cursor.executemany("""
-            INSERT INTO alerts (id, title, message, level, location, timestamp, active)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, default_alerts)
-
-    # Seed Announcements
-    cursor.execute("SELECT COUNT(*) FROM announcements")
-    if cursor.fetchone()[0] == 0:
-        default_announcements = [
-            ("ANN-01", "SST Hackathon 2026: Registrations Open", "Join 400+ student builders for a 36-hour sprint on Smart Campus AI & Distributed Systems. Cash pool ₹2,00,000.", "Events", "emerald", "Aug 28 - Aug 30", "09:00 AM", "Main Auditorium & Innovation Hub", "SST Tech Society"),
-            ("ANN-02", "Mid-Semester Examination Hall Allotment Released", "Check your seating plan on the examination sub-portal. Carry your physical SST student ID badge.", "Academic", "indigo", "Aug 25 - Sep 04", "Morning Sessions", "Block C & Exam Halls", "Academic Office"),
-            ("ANN-03", "Hostel Premier League (HPL) Cricket Knockouts", "Block B Titans vs Block A Warriors in the evening quarter-finals under floodlights. Refreshments provided!", "Hostel", "amber", "Today, Aug 22", "05:30 PM", "Campus Sports Complex", "Hostel Council"),
-            ("ANN-04", "Guest Keynote: Generative AI & Autonomous Agents", "Dr. A. Sharma from Google DeepMind sharing insights on production agent workflows.", "Academic", "purple", "Tomorrow, Aug 23", "11:00 AM", "Seminar Hall 1", "Dept. of Computer Science"),
-            ("ANN-05", "Night Canteen Extended Operating Hours", "Hostel canteen will remain operational until 3:00 AM during mid-term examination week.", "Hostel", "rose", "Aug 22 - Sep 05", "10:00 PM - 03:00 AM", "Central Cafeteria", "Campus Services")
-        ]
-        cursor.executemany("""
-            INSERT INTO announcements (id, title, content, category, badge_color, date, time, venue, organizer)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, default_announcements)
-
     conn.commit()
     conn.close()
 
@@ -268,9 +300,9 @@ def login_required(allowed_roles=None):
         def decorated_function(*args, **kwargs):
             is_api = request.path.startswith('/api/') or request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest"
             
-            if 'user' not in session:
+            if 'user' not in session and 'user_id' not in session:
                 if is_api:
-                    return jsonify({"error": "Authentication required. Please log in as Administrator."}), 401
+                    return jsonify({"error": "Authentication required. Please log in."}), 401
                 return redirect(url_for('login_page', next=request.path))
             
             if allowed_roles:
@@ -378,14 +410,18 @@ def login_page():
             return render_template("login.html", error=error_msg, email=email, role=role), 403
 
         # 5. SUCCESSFUL AUTHENTICATION -> POPULATE SESSION
+        session.clear()
+        session["user_id"] = user["id"]
         session["user"] = user["email"]
         session["email"] = user["email"]
         session["name"] = user["name"]
         session["role"] = user["role"]
-        session["student_id"] = user.get("student_id", "SST-2023-CS042")
+        session["student_id"] = user.get("student_id", "")
         session["reputation"] = user.get("reputation", 4.7)
         session["reputation_points"] = user.get("reputation_points", 94)
         session["badge"] = user.get("badge", "Tech Support Pro")
+        session["status"] = user.get("status", "Good Standing 🟢")
+        session["fine_amount"] = user.get("fine_amount", 0)
 
         if request.headers.get("X-Requested-With") == "XMLHttpRequest" or request.is_json:
             redirect_url = url_for("admin_dashboard") if user["role"] == "Admin" else url_for("student_dashboard")
@@ -396,7 +432,7 @@ def login_page():
         return redirect(url_for("student_dashboard"))
 
     # If already logged in, redirect to respective dashboard
-    if "user" in session:
+    if "user" in session or "user_id" in session:
         if session.get("role") == "Admin":
             return redirect(url_for("admin_dashboard"))
         return redirect(url_for("student_dashboard"))
@@ -413,30 +449,119 @@ def logout():
     return redirect(url_for("login_page"))
 
 
+@app.route("/dashboard")
 @app.route("/")
 @login_required()
 def student_dashboard():
     """Main Student Dashboard view."""
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM users WHERE LOWER(email) = ?", (session.get("email", "sameer.verma@sst.scaler.com").lower(),))
+    user_id = session.get("user_id")
+    email = session.get("email")
+
+    if user_id:
+        cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+    elif email:
+        cursor.execute("SELECT * FROM users WHERE LOWER(email) = ?", (str(email).lower(),))
+    else:
+        conn.close()
+        return redirect(url_for("login_page"))
+
     user_row = cursor.fetchone()
     conn.close()
 
     if user_row:
         user = dict(user_row)
+        session["user_id"] = user["id"]
+        session["name"] = user["name"]
+        session["email"] = user["email"]
+        session["role"] = user["role"]
+        session["student_id"] = user.get("student_id", "")
         session["reputation"] = user.get("reputation", 4.7)
         session["reputation_points"] = user.get("reputation_points", 94)
         session["badge"] = user.get("badge", "Tech Support Pro")
+        session["status"] = user.get("status", "Good Standing 🟢")
+        session["fine_amount"] = user.get("fine_amount", 0)
 
-    return render_template("index.html", user=session)
+    return render_template("index.html", user=session, active_tab="dashboard")
 
 
+@app.route("/announcements")
+@login_required()
+def student_announcements():
+    """Dedicated Student Announcements View."""
+    return render_template("index.html", user=session, active_tab="announcements")
+
+
+@app.route("/events")
+@login_required()
+def student_events():
+    """Dedicated Student Events View."""
+    return render_template("index.html", user=session, active_tab="events")
+
+
+@app.route("/registrations")
+@login_required()
+def student_registrations():
+    """Dedicated Student Event Registrations View."""
+    return render_template("index.html", user=session, active_tab="registrations")
+
+
+@app.route("/tickets")
+@login_required()
+def student_tickets():
+    """Dedicated Student Problem Tickets View."""
+    return render_template("index.html", user=session, active_tab="tickets")
+
+
+@app.route("/profile")
+@login_required()
+def student_profile():
+    """Dedicated Student Profile View."""
+    return render_template("index.html", user=session, active_tab="profile")
+
+
+@app.route("/admin/dashboard")
 @app.route("/admin")
 @login_required(allowed_roles=["Admin"])
 def admin_dashboard():
     """Admin Hub with CCTV Damage Review, Worker Management CRUD, and Review Log."""
-    return render_template("admin.html", user=session)
+    return render_template("admin.html", user=session, active_tab="dashboard")
+
+
+@app.route("/admin/announcements")
+@login_required(allowed_roles=["Admin"])
+def admin_announcements():
+    """Dedicated Admin Announcements & Broadcast View."""
+    return render_template("admin.html", user=session, active_tab="announcements")
+
+
+@app.route("/admin/events")
+@login_required(allowed_roles=["Admin"])
+def admin_events():
+    """Dedicated Admin Events & RSVP Roster View."""
+    return render_template("admin.html", user=session, active_tab="events")
+
+
+@app.route("/admin/users")
+@login_required(allowed_roles=["Admin"])
+def admin_users():
+    """Dedicated Admin User Management View."""
+    return render_template("admin.html", user=session, active_tab="users")
+
+
+@app.route("/admin/tickets")
+@login_required(allowed_roles=["Admin"])
+def admin_tickets():
+    """Dedicated Admin Problem Tickets & Worker Directory View."""
+    return render_template("admin.html", user=session, active_tab="tickets")
+
+
+@app.route("/admin/profile")
+@login_required(allowed_roles=["Admin"])
+def admin_profile():
+    """Dedicated Admin Profile & Permissions View."""
+    return render_template("admin.html", user=session, active_tab="profile")
 
 
 # ==============================================================================
@@ -444,33 +569,74 @@ def admin_dashboard():
 # ==============================================================================
 
 @app.route("/api/student/profile", methods=["GET"])
+@login_required()
 def get_student_profile():
-    """Fetch student profile, fine amount, and standing status from Users table."""
+    """Fetch student profile, fine amount, standing status, and fine history from SQLite."""
     conn = get_db()
     cursor = conn.cursor()
-    email = session.get("email", "sameer.verma@sst.scaler.com").lower()
-    cursor.execute("SELECT * FROM users WHERE LOWER(email) = ? OR role = 'Student' LIMIT 1", (email,))
+    user_id = session.get("user_id")
+    role = session.get("role")
+    email = session.get("email")
+
+    target_user_id = request.args.get("user_id")
+    if role == "Admin" and target_user_id:
+        cursor.execute("SELECT * FROM users WHERE id = ?", (target_user_id,))
+    elif role == "Admin":
+        cursor.execute("SELECT * FROM users WHERE role = 'Student' ORDER BY id ASC LIMIT 1")
+    elif role == "Student" and user_id:
+        cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+    elif role == "Student" and email:
+        cursor.execute("SELECT * FROM users WHERE LOWER(email) = ?", (str(email).lower(),))
+    elif user_id:
+        cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+    elif email:
+        cursor.execute("SELECT * FROM users WHERE LOWER(email) = ?", (str(email).lower(),))
+    else:
+        conn.close()
+        return jsonify({"error": "Authentication required. Please log in."}), 401
+
     row = cursor.fetchone()
+
+    if not row:
+        conn.close()
+        return jsonify({"error": "Student profile not found."}), 404
+
+    user = dict(row)
+    # Fetch real fines from fines table for this student
+    cursor.execute("SELECT * FROM fines WHERE user_id = ? ORDER BY id DESC", (user["id"],))
+    fine_rows = [dict(r) for r in cursor.fetchall()]
     conn.close()
 
-    if row:
-        user = dict(row)
-        return jsonify({
-            "id": f"STU-{user['id']}",
-            "name": user["name"],
-            "email": user["email"],
-            "roll": user.get("student_id", "SST-2023-CS042"),
-            "student_id": user.get("student_id", "SST-2023-CS042"),
-            "department": "Computer Science & AI",
-            "room": "Hostel Block B, Room 204",
-            "status": user.get("status", "Good Standing 🟢"),
-            "fine_amount": user.get("fine_amount", 0),
-            "reputation": user.get("reputation", 4.7),
-            "reputation_points": user.get("reputation_points", 94),
-            "badge": user.get("badge", "Tech Support Pro"),
-            "fine_history": []
-        })
-    return jsonify({"error": "Student profile not found."}), 404
+    fines = []
+    for f in fine_rows:
+        f_copy = dict(f)
+        f_copy["fine_id"] = f"FINE-{f['id']:03d}"
+        f_copy["date_assigned"] = f.get("created_at")
+        fines.append(f_copy)
+
+    pending_fines = [f for f in fines if f.get("status") == "Pending"]
+    latest_pending = pending_fines[0] if pending_fines else None
+
+    return jsonify({
+        "id": f"STU-{user['id']}",
+        "user_id": user["id"],
+        "name": user["name"],
+        "email": user["email"],
+        "roll": user.get("student_id", ""),
+        "student_id": user.get("student_id", ""),
+        "department": "Computer Science & AI",
+        "room": "Hostel Block B, Room 204",
+        "status": user.get("status", "Good Standing 🟢"),
+        "fine_amount": user.get("fine_amount", 0),
+        "reputation": user.get("reputation", 4.7),
+        "reputation_points": user.get("reputation_points", 94),
+        "badge": user.get("badge", "Tech Support Pro"),
+        "fine_history": fines,
+        "current_pending_fine": latest_pending,
+        "total_fines": len(fines),
+        "total_pending_amount": sum(f["amount"] for f in pending_fines),
+        "total_paid_amount": sum(f["amount"] for f in fines if f.get("status") == "Paid")
+    })
 
 
 @app.route("/api/report-problem", methods=["POST"])
@@ -487,7 +653,18 @@ def report_problem():
     description = str(data.get("description", "")).strip()
     urgency = str(data.get("urgency", "High")).strip()
     title = str(data.get("title", f"{category} Issue at {location}")).strip()
-    reporter_name = session.get("name", "Sameer Verma")
+
+    reporter_name = session.get("name")
+    if not reporter_name and session.get("user_id"):
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("SELECT name FROM users WHERE id = ?", (session["user_id"],))
+        u = cursor.fetchone()
+        conn.close()
+        if u:
+            reporter_name = u["name"]
+    if not reporter_name:
+        reporter_name = "Student User"
 
     if not location or not category:
         return jsonify({"error": "Location and category are required."}), 400
@@ -608,14 +785,31 @@ def submit_rating():
         solver_id = worker["id"]
         worker_category = worker["category"]
 
-    # Award +5 Reputation Points to student in Users table
-    email = session.get("email", "sameer.verma@sst.scaler.com").lower()
-    cursor.execute("""
-        UPDATE users 
-        SET reputation_points = reputation_points + 5,
-            reputation = MIN(5.0, ROUND(reputation + 0.05, 2))
-        WHERE LOWER(email) = ? OR role = 'Student'
-    """, (email,))
+    # Award +5 Reputation Points to authenticated student in Users table
+    user_id = session.get("user_id")
+    email = session.get("email")
+
+    if user_id:
+        cursor.execute("""
+            UPDATE users 
+            SET reputation_points = reputation_points + 5,
+                reputation = MIN(5.0, ROUND(reputation + 0.05, 2))
+            WHERE id = ?
+        """, (user_id,))
+    elif email:
+        cursor.execute("""
+            UPDATE users 
+            SET reputation_points = reputation_points + 5,
+                reputation = MIN(5.0, ROUND(reputation + 0.05, 2))
+            WHERE LOWER(email) = ?
+        """, (str(email).lower(),))
+    else:
+        cursor.execute("""
+            UPDATE users 
+            SET reputation_points = reputation_points + 5,
+                reputation = MIN(5.0, ROUND(reputation + 0.05, 2))
+            WHERE role = 'Student'
+        """)
 
     # Update Ticket
     if ticket:
@@ -630,9 +824,24 @@ def submit_rating():
     rev_count = cursor.fetchone()[0]
     rev_id = f"REV-{501 + rev_count}"
 
-    student_name = session.get("name", "Sameer Verma")
-    student_roll = session.get("student_id", "SST-2023-CS042")
+    student_name = session.get("name")
+    student_roll = session.get("student_id")
     timestamp = datetime.now().strftime("%I:%M %p, %d %b %Y")
+
+    # Fetch user if name or roll missing in session
+    if user_id:
+        cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+    elif email:
+        cursor.execute("SELECT * FROM users WHERE LOWER(email) = ?", (str(email).lower(),))
+    else:
+        cursor.execute("SELECT * FROM users WHERE role = 'Student' ORDER BY id ASC LIMIT 1")
+    updated_user_row = cursor.fetchone()
+    updated_user = dict(updated_user_row) if updated_user_row else {"reputation": 4.75, "reputation_points": 99}
+
+    if not student_name:
+        student_name = updated_user.get("name", "Student User")
+    if not student_roll:
+        student_roll = updated_user.get("student_id", "")
 
     cursor.execute("""
         INSERT INTO reviews (id, ticket_id, worker_id, rating, suggestion, student_name, student_roll, worker_name, worker_category, response_time, quality, behavior, timestamp)
@@ -640,10 +849,6 @@ def submit_rating():
     """, (rev_id, ticket_id or "TCK-1000", solver_id or "WKR-01", avg_rating, suggestion or "No specific suggestion provided. Great service.", student_name, student_roll, solver_name, worker_category, int(response_time), int(quality), int(behavior), timestamp))
 
     conn.commit()
-
-    # Query updated student data
-    cursor.execute("SELECT * FROM users WHERE LOWER(email) = ? OR role = 'Student' LIMIT 1", (email,))
-    updated_user = dict(cursor.fetchone())
     conn.close()
 
     session["reputation"] = updated_user["reputation"]
@@ -678,70 +883,393 @@ def get_worker_reviews():
     return jsonify(rows)
 
 
-@app.route("/api/issue-fine", methods=["POST"])
-@app.route("/api/student/issue-fine", methods=["POST"])
-@login_required(allowed_roles=["Admin"])
-def issue_cctv_fine():
-    """Applies ₹500 fine and updates student standing to Action Required in Users table."""
-    data = get_request_data()
-    amount = int(data.get("amount", 500))
-    reason = str(data.get("reason", "Classroom 204 — 3:20 PM - Damaged Chair")).strip()
+# ==============================================================================
+# FINE MANAGEMENT & FINE HISTORY ENDPOINTS (ADMIN & STUDENT)
+# ==============================================================================
 
+@app.route("/api/admin/students", methods=["GET"])
+@login_required(allowed_roles=["Admin"])
+def get_admin_students():
+    """Returns list of student users for fine assignment and history selection."""
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("""
+        SELECT id, name, email, student_id, is_active, status, fine_amount, reputation, reputation_points, badge
+        FROM users
+        WHERE role = 'Student'
+        ORDER BY name ASC
+    """)
+    students = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+    return jsonify(students), 200
+
+
+@app.route("/api/admin/fines", methods=["POST"])
+@app.route("/api/issue-fine", methods=["POST"])
+@app.route("/api/student/issue-fine", methods=["POST"])
+@login_required(allowed_roles=["Admin"])
+def issue_fine():
+    """
+    Admin assigns a fine to a selected student.
+    Stores fine in SQLite fines table, updates student's fine_amount and sets status to 'Action Required 🔴'.
+    """
+    data = get_request_data()
+    try:
+        amount = int(data.get("amount", 500))
+    except (ValueError, TypeError):
+        return jsonify({"error": "Fine amount must be a valid positive integer."}), 400
+
+    if amount <= 0:
+        return jsonify({"error": "Fine amount must be greater than zero."}), 400
+
+    reason = str(data.get("reason", "Classroom 204 — 3:20 PM - Damaged Chair")).strip()
+    if not reason:
+        reason = "Administrative campus disciplinary fine"
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    # Look up target student
+    user_row = None
+    target_user_id = data.get("user_id")
+    target_student_id = data.get("student_id")
+    target_email = data.get("email")
+
+    if target_user_id:
+        cursor.execute("SELECT * FROM users WHERE id = ?", (target_user_id,))
+        user_row = cursor.fetchone()
+    elif target_student_id:
+        cursor.execute("SELECT * FROM users WHERE student_id = ?", (target_student_id,))
+        user_row = cursor.fetchone()
+    elif target_email:
+        cursor.execute("SELECT * FROM users WHERE LOWER(email) = ?", (str(target_email).lower(),))
+        user_row = cursor.fetchone()
+
+    if not user_row:
+        # Fallback to first student in database
+        cursor.execute("SELECT * FROM users WHERE role = 'Student' LIMIT 1")
+        user_row = cursor.fetchone()
+
+    if not user_row:
+        conn.close()
+        return jsonify({"error": "Target student not found in campus database."}), 404
+
+    user = dict(user_row)
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+
+    # Insert into fines table
+    cursor.execute("""
+        INSERT INTO fines (user_id, student_id, student_name, student_email, amount, reason, status, created_at, paid_at)
+        VALUES (?, ?, ?, ?, ?, ?, 'Pending', ?, NULL)
+    """, (
+        user["id"],
+        user.get("student_id", "SST-2023-CS042"),
+        user["name"],
+        user["email"],
+        amount,
+        reason,
+        now_str
+    ))
+    fine_id = cursor.lastrowid
+
+    # Update student's fine amount and standing
+    cursor.execute("""
         UPDATE users 
         SET fine_amount = fine_amount + ?, status = 'Action Required 🔴'
-        WHERE role = 'Student'
-    """, (amount,))
+        WHERE id = ?
+    """, (amount, user["id"]))
     conn.commit()
 
-    cursor.execute("SELECT * FROM users WHERE role = 'Student' LIMIT 1")
-    user = dict(cursor.fetchone())
+    cursor.execute("SELECT * FROM users WHERE id = ?", (user["id"],))
+    updated_user = dict(cursor.fetchone())
     conn.close()
 
+    fine_dict = {
+        "id": fine_id,
+        "fine_id": f"FINE-{fine_id:03d}",
+        "user_id": user["id"],
+        "student_id": user.get("student_id", "SST-2023-CS042"),
+        "student_name": user["name"],
+        "student_email": user["email"],
+        "amount": amount,
+        "reason": reason,
+        "status": "Pending",
+        "created_at": now_str,
+        "date_assigned": now_str,
+        "paid_at": None
+    }
+
     return jsonify({
-        "message": f"₹{amount} fine successfully issued to {user['name']}! Status changed to 'Action Required 🔴'.",
+        "success": True,
+        "message": f"₹{amount} fine successfully issued to {updated_user['name']}! Status changed to 'Action Required 🔴'.",
+        "fine": fine_dict,
         "student": {
-            "name": user["name"],
-            "status": user["status"],
-            "fine_amount": user["fine_amount"]
+            "id": updated_user["id"],
+            "name": updated_user["name"],
+            "email": updated_user["email"],
+            "student_id": updated_user.get("student_id", "SST-2023-CS042"),
+            "status": updated_user["status"],
+            "fine_amount": updated_user["fine_amount"]
         }
     }), 200
 
 
-@app.route("/api/student/pay-fine", methods=["POST"])
-def pay_student_fine():
-    """Clears fine and restores status to Good Standing 🟢 in Users table."""
+@app.route("/api/admin/fines", methods=["GET"])
+@login_required(allowed_roles=["Admin"])
+def get_admin_all_fines():
+    """
+    Admin retrieves all assigned fines campus-wide, or filters by student user_id / student_id.
+    Returns fine records along with summary statistics.
+    """
+    user_id = request.args.get("user_id")
+    student_id = request.args.get("student_id")
+
     conn = get_db()
     cursor = conn.cursor()
+
+    if user_id:
+        cursor.execute("SELECT * FROM fines WHERE user_id = ? ORDER BY id DESC", (user_id,))
+    elif student_id:
+        cursor.execute("SELECT * FROM fines WHERE student_id = ? ORDER BY id DESC", (student_id,))
+    else:
+        cursor.execute("SELECT * FROM fines ORDER BY id DESC")
+
+    raw_fines = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+
+    fines = []
+    for f in raw_fines:
+        f_copy = dict(f)
+        f_copy["fine_id"] = f"FINE-{f['id']:03d}"
+        f_copy["date_assigned"] = f.get("created_at")
+        fines.append(f_copy)
+
+    total_fines = len(fines)
+    total_pending_amount = sum(f["amount"] for f in fines if f.get("status") == "Pending")
+    total_paid_amount = sum(f["amount"] for f in fines if f.get("status") == "Paid")
+
+    return jsonify({
+        "fines": fines,
+        "total_fines": total_fines,
+        "total_pending_amount": total_pending_amount,
+        "total_paid_amount": total_paid_amount
+    }), 200
+
+
+@app.route("/api/admin/students/<int:user_id>/fines", methods=["GET"])
+@login_required(allowed_roles=["Admin"])
+def get_admin_student_fine_history(user_id):
+    """Admin retrieves complete fine history and summary metrics for a specific student."""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, name, email, student_id, status, fine_amount FROM users WHERE id = ?", (user_id,))
+    student_row = cursor.fetchone()
+    if not student_row:
+        conn.close()
+        return jsonify({"error": "Student not found."}), 404
+
+    student = dict(student_row)
+    cursor.execute("SELECT * FROM fines WHERE user_id = ? ORDER BY id DESC", (user_id,))
+    raw_fines = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+
+    fines = []
+    for f in raw_fines:
+        f_copy = dict(f)
+        f_copy["fine_id"] = f"FINE-{f['id']:03d}"
+        f_copy["date_assigned"] = f.get("created_at")
+        fines.append(f_copy)
+
+    total_fines = len(fines)
+    total_pending_amount = sum(f["amount"] for f in fines if f.get("status") == "Pending")
+    total_paid_amount = sum(f["amount"] for f in fines if f.get("status") == "Paid")
+
+    return jsonify({
+        "student": student,
+        "fines": fines,
+        "total_fines": total_fines,
+        "total_pending_amount": total_pending_amount,
+        "total_paid_amount": total_paid_amount
+    }), 200
+
+
+@app.route("/api/student/fines", methods=["GET"])
+@app.route("/api/student/fine-history", methods=["GET"])
+@login_required()
+def get_student_fine_history():
+    """
+    Student retrieves their own complete fine history.
+    Strictly scoped to session user_id to prevent accessing other students' records.
+    """
+    conn = get_db()
+    cursor = conn.cursor()
+
+    user_id = session.get("user_id")
+    email = session.get("email")
+    if user_id:
+        cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+    elif email:
+        cursor.execute("SELECT * FROM users WHERE LOWER(email) = ?", (str(email).lower(),))
+    else:
+        conn.close()
+        return jsonify({"error": "Authentication required. Please log in."}), 401
+    user_row = cursor.fetchone()
+
+    if not user_row:
+        conn.close()
+        return jsonify({"error": "Student not found."}), 404
+
+    user = dict(user_row)
+    user_id = user["id"]
+
+    cursor.execute("SELECT * FROM fines WHERE user_id = ? ORDER BY id DESC", (user_id,))
+    raw_fines = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+
+    fines = []
+    for f in raw_fines:
+        f_copy = dict(f)
+        f_copy["fine_id"] = f"FINE-{f['id']:03d}"
+        f_copy["date_assigned"] = f.get("created_at")
+        fines.append(f_copy)
+
+    total_fines = len(fines)
+    total_pending_amount = sum(f["amount"] for f in fines if f.get("status") == "Pending")
+    total_paid_amount = sum(f["amount"] for f in fines if f.get("status") == "Paid")
+
+    pending_fines = [f for f in fines if f.get("status") == "Pending"]
+    current_pending_fine = pending_fines[0] if pending_fines else None
+
+    return jsonify({
+        "fines": fines,
+        "total_fines": total_fines,
+        "total_pending_amount": total_pending_amount,
+        "total_paid_amount": total_paid_amount,
+        "current_pending_fine": current_pending_fine,
+        "has_fines": total_fines > 0
+    }), 200
+
+
+@app.route("/api/student/pay-fine", methods=["POST"])
+@app.route("/api/student/fines/pay", methods=["POST"])
+@login_required()
+def pay_student_fine():
+    """
+    Clears / pays pending fine(s) and restores status to Good Standing 🟢 in SQLite.
+    Marks all pending fines for the logged-in student as Paid and records paid_at timestamp.
+    """
+    conn = get_db()
+    cursor = conn.cursor()
+
+    user_id = session.get("user_id")
+    email = session.get("email")
+    if user_id:
+        cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+    elif email:
+        cursor.execute("SELECT * FROM users WHERE LOWER(email) = ?", (str(email).lower(),))
+    else:
+        conn.close()
+        return jsonify({"error": "Authentication required. Please log in."}), 401
+    user_row = cursor.fetchone()
+
+    if not user_row:
+        conn.close()
+        return jsonify({"error": "Student not found."}), 404
+
+    user = dict(user_row)
+    user_id = user["id"]
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+
+    # Mark all pending fines for this student as Paid
+    cursor.execute("""
+        UPDATE fines 
+        SET status = 'Paid', paid_at = ?
+        WHERE user_id = ? AND status = 'Pending'
+    """, (now_str, user_id))
+
+    # Clear fine_amount on users table
     cursor.execute("""
         UPDATE users 
         SET fine_amount = 0, status = 'Good Standing 🟢'
-        WHERE role = 'Student'
-    """)
+        WHERE id = ?
+    """, (user_id,))
     conn.commit()
 
-    cursor.execute("SELECT * FROM users WHERE role = 'Student' LIMIT 1")
-    user = dict(cursor.fetchone())
+    cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+    updated_user = dict(cursor.fetchone())
     conn.close()
 
     return jsonify({
+        "success": True,
         "message": "Fine cleared successfully. Status updated to 'Good Standing 🟢'.",
         "student": {
-            "name": user["name"],
-            "status": user["status"],
-            "fine_amount": user["fine_amount"]
+            "name": updated_user["name"],
+            "status": updated_user["status"],
+            "fine_amount": updated_user["fine_amount"]
         }
-    })
+    }), 200
+
+
+@app.route("/api/student/fines/<int:fine_id>/pay", methods=["POST"])
+@login_required()
+def pay_single_fine(fine_id):
+    """Pays a single specific fine by fine_id."""
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM fines WHERE id = ?", (fine_id,))
+    fine_row = cursor.fetchone()
+    if not fine_row:
+        conn.close()
+        return jsonify({"error": "Fine not found."}), 404
+
+    fine = dict(fine_row)
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+
+    # Security check: if role is Student, must own the fine
+    if session.get("role") == "Student":
+        current_email = session.get("email", "").lower()
+        cursor.execute("SELECT id FROM users WHERE LOWER(email) = ?", (current_email,))
+        cur_u = cursor.fetchone()
+        if cur_u and fine["user_id"] != cur_u["id"]:
+            conn.close()
+            return jsonify({"error": "Forbidden: You cannot pay someone else's fine."}), 403
+
+    cursor.execute("UPDATE fines SET status = 'Paid', paid_at = ? WHERE id = ?", (now_str, fine_id))
+
+    # Recalculate remaining pending fines for this user
+    cursor.execute("SELECT SUM(amount) FROM fines WHERE user_id = ? AND status = 'Pending'", (fine["user_id"],))
+    remaining = cursor.fetchone()[0] or 0
+
+    if remaining == 0:
+        cursor.execute("UPDATE users SET fine_amount = 0, status = 'Good Standing 🟢' WHERE id = ?", (fine["user_id"],))
+    else:
+        cursor.execute("UPDATE users SET fine_amount = ?, status = 'Action Required 🔴' WHERE id = ?", (remaining, fine["user_id"]))
+    conn.commit()
+
+    cursor.execute("SELECT * FROM users WHERE id = ?", (fine["user_id"],))
+    updated_user = dict(cursor.fetchone())
+    conn.close()
+
+    return jsonify({
+        "success": True,
+        "message": f"Fine #{fine_id} paid successfully.",
+        "student": {
+            "name": updated_user["name"],
+            "status": updated_user["status"],
+            "fine_amount": updated_user["fine_amount"]
+        }
+    }), 200
 
 
 @app.route("/api/events/book", methods=["POST"])
 @app.route("/api/book-event", methods=["POST"])
+@login_required()
 def book_event():
     """
-    Checks venue and time clash against Events table.
-    If booked, returns 409: ⚠️ TIME CLASH DETECTED: [Venue] is already booked
+    Database-backed Event & Venue Booking with real time interval conflict detection.
+    Validates time ranges (end > start) and checks SQLite events table.
+    Returns HTTP 409 with conflicting_event details on clash.
     """
     data = get_request_data()
     name = str(data.get("name", "")).strip()
@@ -749,22 +1277,43 @@ def book_event():
     date = str(data.get("date", "Today")).strip()
     start_time = str(data.get("start_time", "")).strip()
     end_time = str(data.get("end_time", "")).strip()
-    organizer = session.get("name", "Student Council")
+    organizer = str(data.get("organizer", "")).strip() or session.get("name", "Student Council")
 
-    if not name or not venue:
-        return jsonify({"error": "Event name and venue are required."}), 400
+    # 1. Required fields validation
+    if not name or not venue or not date:
+        return jsonify({"error": "Event name, venue, and date are required."}), 400
 
     def parse_time_mins(t_str):
         try:
             parts = t_str.strip().split(":")
-            return int(parts[0]) * 60 + int(parts[1])
+            if len(parts) != 2:
+                return None
+            hrs, mins = int(parts[0]), int(parts[1])
+            if 0 <= hrs <= 23 and 0 <= mins <= 59:
+                return hrs * 60 + mins
+            return None
         except Exception:
-            return 0
+            return None
 
-    new_start = parse_time_mins(start_time) if start_time else 0
-    new_end = parse_time_mins(end_time) if end_time else 1440
+    # 2. Time range validation
+    if start_time or end_time:
+        new_start = parse_time_mins(start_time)
+        new_end = parse_time_mins(end_time)
+
+        if new_start is None or new_end is None:
+            return jsonify({"error": "Invalid time format. Please use HH:MM format (e.g., 09:00, 14:30)."}), 400
+
+        if new_end <= new_start:
+            return jsonify({"error": "Invalid time range: End time must be strictly after start time."}), 400
+    else:
+        new_start = 9 * 60
+        new_end = 17 * 60
+        start_time = "09:00"
+        end_time = "17:00"
+
     venue_lower = venue.lower()
 
+    # 3. Conflict Detection against SQLite Events Table
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM events")
@@ -773,42 +1322,59 @@ def book_event():
     for event in all_events:
         evt_loc = event.get("venue", "").lower()
 
+        # Venue matching (exact or recognized campus venue keyword)
         venue_match = (
+            (venue_lower == evt_loc) or
             ("auditorium" in venue_lower and "auditorium" in evt_loc) or
             ("sports" in venue_lower and "sports" in evt_loc) or
             ("seminar" in venue_lower and "seminar" in evt_loc) or
             ("exam" in venue_lower and "exam" in evt_loc) or
+            ("innovation" in venue_lower and "innovation" in evt_loc) or
             (venue_lower in evt_loc) or (evt_loc in venue_lower)
         )
 
+        # Date matching
         date_match = (
             event.get("date", "").lower() == date.lower() or
-            (event.get("date", "").lower() in ["today", "aug 22"] and date.lower() in ["today", "aug 22"])
+            (event.get("date", "").lower() in ["today", "aug 22", "aug 23"] and date.lower() in ["today", "aug 22", "aug 23"])
         )
 
         if venue_match and date_match:
-            evt_start = parse_time_mins(event.get("start_time", "00:00"))
-            evt_end = parse_time_mins(event.get("end_time", "23:59"))
+            evt_start = parse_time_mins(event.get("start_time", "00:00")) or 0
+            evt_end = parse_time_mins(event.get("end_time", "23:59")) or 1440
 
-            if (not start_time and not end_time) or (new_start < evt_end and new_end > evt_start):
+            # Overlap condition: existing_start < requested_end AND existing_end > requested_start
+            if new_start < evt_end and new_end > evt_start:
                 conn.close()
-                venue_display = "Auditorium" if "auditorium" in venue_lower else venue
-                clash_text = f"⚠️ TIME CLASH DETECTED: {venue_display} is already booked"
+                conflict_msg = (
+                    f"⚠️ Schedule Conflict: \"{event['name']}\" conducted by \"{event['organizer']}\" "
+                    f"is already scheduled in \"{event['venue']}\" from {event['start_time']} to {event['end_time']} "
+                    f"on {event['date']}. Please choose another area or time."
+                )
                 return jsonify({
+                    "error": "schedule_conflict",
                     "clash": True,
-                    "error": clash_text,
-                    "message": clash_text,
-                    "conflicting_event": event
+                    "message": conflict_msg,
+                    "conflicting_event": {
+                        "name": event["name"],
+                        "organizer": event["organizer"],
+                        "venue": event["venue"],
+                        "date": event["date"],
+                        "start_time": event["start_time"],
+                        "end_time": event["end_time"]
+                    }
                 }), 409
 
+    # 4. Insert Confirmed Event into Database
+    capacity = int(data.get("capacity", 100)) if str(data.get("capacity", "")).isdigit() and int(data.get("capacity", 100)) > 0 else 100
     cursor.execute("SELECT COUNT(*) FROM events")
     count = cursor.fetchone()[0]
     evt_id = f"EVT-{101 + count}"
 
     cursor.execute("""
-        INSERT INTO events (id, name, organizer, venue, date, start_time, end_time, description)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    """, (evt_id, name, organizer, venue, date, start_time or "09:00", end_time or "17:00", f"Booked by {organizer}"))
+        INSERT INTO events (id, name, organizer, venue, date, start_time, end_time, description, capacity)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (evt_id, name, organizer, venue, date, start_time, end_time, f"Booked by {organizer}", capacity))
     conn.commit()
 
     cursor.execute("SELECT * FROM events WHERE id = ?", (evt_id,))
@@ -820,6 +1386,175 @@ def book_event():
         "message": f"Venue '{venue}' successfully booked for '{name}'!",
         "event": new_event
     }), 201
+
+
+# ==============================================================================
+# EVENT REGISTRATION / RSVP ENDPOINTS
+# ==============================================================================
+
+@app.route("/api/events/<event_id>/register", methods=["POST"])
+@app.route("/api/events/register", methods=["POST"])
+@login_required(allowed_roles=["Student"])
+def register_event(event_id=None):
+    """
+    Registers the authenticated Student for an event in SQLite event_registrations.
+    Checks:
+    - User is logged in as Student
+    - Event exists in database
+    - Student is not already registered (prevents duplicates)
+    - Event has not reached full capacity
+    """
+    data = get_request_data()
+    if not event_id:
+        event_id = data.get("event_id")
+    if not event_id:
+        return jsonify({"error": "Event ID is required."}), 400
+
+    user_id = session.get("user_id")
+    user_name = session.get("name", "Student User")
+    user_email = session.get("email", "")
+    user_student_id = session.get("student_id", "")
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    if not user_id and user_email:
+        cursor.execute("SELECT id, name, student_id FROM users WHERE LOWER(email) = LOWER(?)", (user_email,))
+        u = cursor.fetchone()
+        if u:
+            user_id = u["id"]
+            if not user_name or user_name == "Student User":
+                user_name = u["name"]
+            if not user_student_id:
+                user_student_id = u["student_id"]
+
+    # 1. Verify event exists
+    cursor.execute("SELECT * FROM events WHERE id = ?", (event_id,))
+    event = cursor.fetchone()
+    if not event:
+        conn.close()
+        return jsonify({"error": "Event not found."}), 404
+    event = dict(event)
+
+    # 2. Check if already registered
+    cursor.execute("SELECT * FROM event_registrations WHERE event_id = ? AND user_id = ?", (event_id, user_id))
+    existing_reg = cursor.fetchone()
+    if existing_reg:
+        conn.close()
+        return jsonify({
+            "error": "already_registered",
+            "message": f"You are already registered for '{event['name']}'."
+        }), 409
+
+    # 3. Check capacity
+    cursor.execute("SELECT COUNT(*) FROM event_registrations WHERE event_id = ?", (event_id,))
+    reg_count = cursor.fetchone()[0]
+    capacity = event.get("capacity") if event.get("capacity") is not None else 100
+    if reg_count >= capacity:
+        conn.close()
+        return jsonify({
+            "error": "event_full",
+            "message": f"Registration closed: '{event['name']}' has reached full capacity ({reg_count}/{capacity})."
+        }), 409
+
+    # 4. Insert registration
+    from datetime import datetime
+    reg_timestamp = datetime.now().strftime("%b %d, %I:%M %p")
+    cursor.execute("""
+        INSERT INTO event_registrations (event_id, user_id, student_name, student_id, student_email, registered_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+    """, (event_id, user_id, user_name, user_student_id, user_email, reg_timestamp))
+    conn.commit()
+
+    reg_id = cursor.lastrowid
+    cursor.execute("SELECT COUNT(*) FROM event_registrations WHERE event_id = ?", (event_id,))
+    new_count = cursor.fetchone()[0]
+    conn.close()
+
+    return jsonify({
+        "success": True,
+        "message": f"🎉 Successfully registered for '{event['name']}'!",
+        "registration": {
+            "id": reg_id,
+            "event_id": event_id,
+            "event_name": event["name"],
+            "registered_at": reg_timestamp,
+            "registered_count": new_count,
+            "capacity": capacity
+        }
+    }), 201
+
+
+@app.route("/api/student/my-registrations", methods=["GET"])
+@app.route("/api/events/my-registrations", methods=["GET"])
+@login_required(allowed_roles=["Student"])
+def get_my_registrations():
+    """
+    Returns all event registrations for the currently authenticated student.
+    """
+    user_id = session.get("user_id")
+    user_email = session.get("email", "")
+    conn = get_db()
+    cursor = conn.cursor()
+
+    if not user_id and user_email:
+        cursor.execute("SELECT id FROM users WHERE LOWER(email) = LOWER(?)", (user_email,))
+        u = cursor.fetchone()
+        if u:
+            user_id = u["id"]
+
+    cursor.execute("""
+        SELECT r.id AS registration_id, r.registered_at,
+               e.id AS event_id, e.name AS event_name, e.organizer, e.venue,
+               e.date, e.start_time, e.end_time, e.description, COALESCE(e.capacity, 100) AS capacity,
+               'Confirmed 🟢' AS status
+        FROM event_registrations r
+        JOIN events e ON r.event_id = e.id
+        WHERE r.user_id = ?
+        ORDER BY r.id DESC
+    """, (user_id,))
+    rows = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+    return jsonify(rows)
+
+
+@app.route("/api/admin/events/<event_id>/registrations", methods=["GET"])
+@login_required(allowed_roles=["Admin"])
+def get_event_registrations_admin(event_id):
+    """
+    Admin-only endpoint to view full registered student roster for a given event.
+    """
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM events WHERE id = ?", (event_id,))
+    event = cursor.fetchone()
+    if not event:
+        conn.close()
+        return jsonify({"error": "Event not found."}), 404
+    event = dict(event)
+
+    cursor.execute("""
+        SELECT r.id, r.user_id, r.student_name, r.student_id, r.student_email, r.registered_at
+        FROM event_registrations r
+        WHERE r.event_id = ?
+        ORDER BY r.id ASC
+    """, (event_id,))
+    registrations = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+
+    return jsonify({
+        "event": {
+            "id": event["id"],
+            "name": event["name"],
+            "venue": event["venue"],
+            "date": event["date"],
+            "start_time": event["start_time"],
+            "end_time": event["end_time"],
+            "capacity": event.get("capacity", 100),
+            "registered_count": len(registrations)
+        },
+        "registrations": registrations
+    }), 200
 
 
 # ==============================================================================
@@ -1072,27 +1807,196 @@ def delete_admin_user(user_id):
 # ==============================================================================
 
 @app.route("/api/alerts", methods=["GET"])
+@login_required()
 def get_alerts():
+    """
+    Returns urgent/important campus announcements formatted for alert display.
+    """
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM alerts WHERE active = 1")
+    cursor.execute("""
+        SELECT id, title, content AS message,
+               CASE LOWER(priority)
+                   WHEN 'urgent' THEN 'danger'
+                   WHEN 'important' THEN 'warning'
+                   ELSE 'info'
+               END AS level,
+               COALESCE(venue, 'Campus-wide') AS location,
+               COALESCE(time, date, created_at, 'Just now') AS timestamp,
+               1 AS active,
+               priority
+        FROM announcements
+        WHERE LOWER(priority) IN ('urgent', 'important')
+        ORDER BY
+            CASE LOWER(priority)
+                WHEN 'urgent' THEN 1
+                ELSE 2
+            END,
+            rowid DESC
+    """)
     rows = [dict(r) for r in cursor.fetchall()]
     conn.close()
     return jsonify(rows)
 
 
 @app.route("/api/announcements", methods=["GET"])
+@login_required()
 def get_announcements():
+    """
+    Returns active campus announcements from SQLite database.
+    Supports filtering by category and priority.
+    Ordered with Urgent first, Important second, Normal third, then newest.
+    """
     category = request.args.get("category")
+    priority = request.args.get("priority")
     conn = get_db()
     cursor = conn.cursor()
+
+    query = """
+        SELECT id, title, content, category,
+               COALESCE(priority, 'Normal') AS priority,
+               COALESCE(audience, 'All') AS audience,
+               COALESCE(badge_color, 'teal') AS badge_color,
+               COALESCE(date, created_at, 'Today') AS date,
+               COALESCE(time, '') AS time,
+               COALESCE(venue, 'Campus') AS venue,
+               COALESCE(organizer, created_by, 'Campus Administration') AS organizer,
+               COALESCE(created_by, 'Campus Administrator') AS created_by,
+               COALESCE(created_at, date) AS created_at
+        FROM announcements
+    """
+    params = []
+    conditions = []
     if category and category.lower() != "all":
-        cursor.execute("SELECT * FROM announcements WHERE LOWER(category) = ?", (category.lower(),))
-    else:
-        cursor.execute("SELECT * FROM announcements")
+        conditions.append("LOWER(category) = ?")
+        params.append(category.lower())
+    if priority and priority.lower() != "all":
+        conditions.append("LOWER(priority) = ?")
+        params.append(priority.lower())
+
+    if conditions:
+        query += " WHERE " + " AND ".join(conditions)
+
+    query += """
+        ORDER BY
+            CASE LOWER(COALESCE(priority, 'Normal'))
+                WHEN 'urgent' THEN 1
+                WHEN 'important' THEN 2
+                ELSE 3
+            END,
+            rowid DESC
+    """
+    cursor.execute(query, tuple(params))
     rows = [dict(r) for r in cursor.fetchall()]
     conn.close()
     return jsonify(rows)
+
+
+@app.route("/api/admin/announcements", methods=["GET"])
+@login_required(allowed_roles=["Admin"])
+def get_admin_announcements():
+    """
+    Admin-only retrieval of all announcements with management metadata.
+    """
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT id, title, content, category,
+               COALESCE(priority, 'Normal') AS priority,
+               COALESCE(audience, 'All') AS audience,
+               COALESCE(date, created_at, 'Today') AS date,
+               COALESCE(time, '') AS time,
+               COALESCE(venue, 'Campus') AS venue,
+               COALESCE(organizer, created_by, 'Campus Administration') AS organizer,
+               COALESCE(created_by, 'Campus Administrator') AS created_by,
+               COALESCE(created_at, date) AS created_at
+        FROM announcements
+        ORDER BY rowid DESC
+    """)
+    rows = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+    return jsonify(rows)
+
+
+@app.route("/api/admin/announcements", methods=["POST"])
+@app.route("/api/announcements", methods=["POST"])
+@login_required(allowed_roles=["Admin"])
+def create_announcement():
+    """
+    Admin-only endpoint to create and publish a new campus announcement in SQLite.
+    """
+    data = get_request_data()
+    title = str(data.get("title", "")).strip()
+    content = str(data.get("content") or data.get("message") or "").strip()
+    category = str(data.get("category", "General")).strip()
+    priority = str(data.get("priority", "Normal")).strip()
+    audience = str(data.get("audience", "All")).strip()
+    venue = str(data.get("venue", "Campus-wide")).strip()
+
+    if not title or not content:
+        return jsonify({"error": "Title and Announcement Message are required."}), 400
+
+    if category not in ["Academic", "Hostel", "Events", "General"]:
+        category = "General"
+
+    if priority not in ["Normal", "Important", "Urgent"]:
+        priority = "Normal"
+
+    badge_color = "rose" if priority == "Urgent" else ("amber" if priority == "Important" else "teal")
+
+    from datetime import datetime
+    now = datetime.now()
+    created_at = now.strftime("%b %d, %Y, %I:%M %p")
+    date_str = now.strftime("Today, %b %d")
+    time_str = now.strftime("%I:%M %p")
+    admin_name = session.get("name", "Campus Administrator")
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM announcements")
+    count = cursor.fetchone()[0]
+    ann_id = f"ANN-{str(count + 1).zfill(2)}"
+
+    cursor.execute("""
+        INSERT INTO announcements (id, title, content, category, priority, audience, badge_color, date, time, venue, organizer, created_by, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (ann_id, title, content, category, priority, audience, badge_color, date_str, time_str, venue, admin_name, admin_name, created_at))
+    conn.commit()
+
+    cursor.execute("SELECT * FROM announcements WHERE id = ?", (ann_id,))
+    new_ann = dict(cursor.fetchone())
+    conn.close()
+
+    return jsonify({
+        "success": True,
+        "message": f"📢 Announcement '{title}' published successfully!",
+        "announcement": new_ann
+    }), 201
+
+
+@app.route("/api/admin/announcements/<ann_id>", methods=["DELETE"])
+@app.route("/api/announcements/<ann_id>", methods=["DELETE"])
+@login_required(allowed_roles=["Admin"])
+def delete_announcement(ann_id):
+    """
+    Admin-only endpoint to delete an announcement from SQLite.
+    """
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM announcements WHERE id = ?", (ann_id,))
+    ann = cursor.fetchone()
+    if not ann:
+        conn.close()
+        return jsonify({"error": "Announcement not found."}), 404
+
+    cursor.execute("DELETE FROM announcements WHERE id = ?", (ann_id,))
+    conn.commit()
+    conn.close()
+
+    return jsonify({
+        "success": True,
+        "message": f"Announcement '{ann['title']}' deleted successfully."
+    }), 200
 
 
 @app.route("/api/tickets", methods=["GET"])
@@ -1106,11 +2010,43 @@ def get_tickets():
 
 
 @app.route("/api/events", methods=["GET"])
+@login_required()
 def get_events():
+    """
+    Returns live scheduled campus events from SQLite database.
+    Includes capacity, registered count, and whether current student is registered.
+    Ordered chronologically by date and start_time.
+    """
+    user_id = session.get("user_id")
+    user_role = session.get("role")
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM events")
+    cursor.execute("""
+        SELECT e.id, e.name, e.organizer, e.venue, e.date, e.start_time, e.end_time, e.description,
+               COALESCE(e.capacity, 100) AS capacity,
+               'Confirmed 🟢' AS status,
+               (SELECT COUNT(*) FROM event_registrations r WHERE r.event_id = e.id) AS registered_count
+        FROM events e
+        ORDER BY
+            CASE
+                WHEN LOWER(e.date) = 'today' THEN 1
+                WHEN LOWER(e.date) = 'tomorrow' THEN 2
+                ELSE 3
+            END,
+            e.date ASC,
+            e.start_time ASC
+    """)
     rows = [dict(r) for r in cursor.fetchall()]
+
+    if user_role == "Student" and user_id:
+        cursor.execute("SELECT event_id FROM event_registrations WHERE user_id = ?", (user_id,))
+        registered_set = {r[0] for r in cursor.fetchall()}
+        for row in rows:
+            row["is_registered"] = row["id"] in registered_set
+    else:
+        for row in rows:
+            row["is_registered"] = False
+
     conn.close()
     return jsonify(rows)
 
