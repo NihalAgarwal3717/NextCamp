@@ -44,6 +44,29 @@ async function fetchStudentProfile() {
         if (headerRep && student.reputation !== undefined) headerRep.innerText = `⭐ ${parseFloat(student.reputation).toFixed(1)}`;
         if (headerBadge && student.badge) headerBadge.innerText = student.badge;
 
+        // Dynamic Profile Tab & Avatar elements
+        const profName = document.getElementById('profileTabName');
+        const profEmail = document.getElementById('profileTabEmail');
+        const profRoll = document.getElementById('profileTabRoll');
+        const rollEl = document.getElementById('studentProfileRoll');
+        const avatar1 = document.getElementById('studentAvatarInitials');
+        const avatar2 = document.getElementById('profileTabAvatarInitials');
+
+        if (profName && student.name) profName.innerText = student.name;
+        if (profEmail && student.email) profEmail.innerText = student.email;
+        if (student.student_id || student.roll) {
+            const rollVal = student.student_id || student.roll;
+            if (profRoll) profRoll.innerText = rollVal;
+            if (rollEl) rollEl.innerText = `${rollVal} • Hostel Block B, Room 204`;
+        }
+
+        if (student.name) {
+            const parts = student.name.trim().split(/\s+/);
+            const initials = (parts[0] ? parts[0][0] : 'S') + (parts.length > 1 && parts[1] ? parts[1][0] : '');
+            if (avatar1) avatar1.innerText = initials.toUpperCase();
+            if (avatar2) avatar2.innerText = initials.toUpperCase();
+        }
+
         const fineAmount = student.fine_amount || 0;
         const isActionRequired = (student.status && student.status.includes('Action Required')) || fineAmount > 0;
 

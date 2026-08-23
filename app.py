@@ -1,7 +1,7 @@
 import os
 import random
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import wraps
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session, flash
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -11,6 +11,7 @@ app.secret_key = os.environ.get("SECRET_KEY", "nextcamp_secret_key_scaler_sst_20
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_NAME"] = "nextcamp_session"
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=7)
 DB_PATH = os.environ.get(
     "NEXTCAMP_DB",
     "/tmp/nextcamp.db" if os.environ.get("VERCEL") else os.path.join(os.path.dirname(__file__), "nextcamp.db")
@@ -322,6 +323,43 @@ def login_required(allowed_roles=None):
     return decorator
 
 
+def load_authenticated_user_session():
+    """Helper that verifies and re-syncs the session against the SQLite database on every page load/refresh."""
+    user_id = session.get("user_id")
+    email = session.get("email")
+
+    if not user_id and not email:
+        return None
+
+    conn = get_db()
+    cursor = conn.cursor()
+    if user_id:
+        cursor.execute("SELECT * FROM users WHERE id = ? AND is_active = 1", (user_id,))
+    else:
+        cursor.execute("SELECT * FROM users WHERE LOWER(email) = ? AND is_active = 1", (str(email).lower(),))
+    row = cursor.fetchone()
+    conn.close()
+
+    if not row:
+        session.clear()
+        return None
+
+    user = dict(row)
+    session.permanent = True
+    session["user_id"] = user["id"]
+    session["user"] = user["email"]
+    session["email"] = user["email"]
+    session["name"] = user["name"]
+    session["role"] = user["role"]
+    session["student_id"] = user.get("student_id", "")
+    session["reputation"] = user.get("reputation", 4.7)
+    session["reputation_points"] = user.get("reputation_points", 94)
+    session["badge"] = user.get("badge", "Tech Support Pro")
+    session["status"] = user.get("status", "Good Standing 🟢")
+    session["fine_amount"] = user.get("fine_amount", 0)
+    return user
+
+
 # ==============================================================================
 # SMART PROBLEM ALLOCATION ENGINE
 # ==============================================================================
@@ -414,6 +452,7 @@ def login_page():
 
         # 5. SUCCESSFUL AUTHENTICATION -> POPULATE SESSION
         session.clear()
+        session.permanent = True
         session["user_id"] = user["id"]
         session["user"] = user["email"]
         session["email"] = user["email"]
@@ -436,9 +475,11 @@ def login_page():
 
     # If already logged in, redirect to respective dashboard
     if "user" in session or "user_id" in session:
-        if session.get("role") == "Admin":
-            return redirect(url_for("admin_dashboard"))
-        return redirect(url_for("student_dashboard"))
+        user = load_authenticated_user_session()
+        if user:
+            if user.get("role") == "Admin":
+                return redirect(url_for("admin_dashboard"))
+            return redirect(url_for("student_dashboard"))
 
     return render_template("login.html")
 
@@ -457,35 +498,11 @@ def logout():
 @login_required()
 def student_dashboard():
     """Main Student Dashboard view."""
-    conn = get_db()
-    cursor = conn.cursor()
-    user_id = session.get("user_id")
-    email = session.get("email")
-
-    if user_id:
-        cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
-    elif email:
-        cursor.execute("SELECT * FROM users WHERE LOWER(email) = ?", (str(email).lower(),))
-    else:
-        conn.close()
+    user = load_authenticated_user_session()
+    if not user:
         return redirect(url_for("login_page"))
-
-    user_row = cursor.fetchone()
-    conn.close()
-
-    if user_row:
-        user = dict(user_row)
-        session["user_id"] = user["id"]
-        session["name"] = user["name"]
-        session["email"] = user["email"]
-        session["role"] = user["role"]
-        session["student_id"] = user.get("student_id", "")
-        session["reputation"] = user.get("reputation", 4.7)
-        session["reputation_points"] = user.get("reputation_points", 94)
-        session["badge"] = user.get("badge", "Tech Support Pro")
-        session["status"] = user.get("status", "Good Standing 🟢")
-        session["fine_amount"] = user.get("fine_amount", 0)
-
+    if user.get("role") == "Admin":
+        return redirect(url_for("admin_dashboard"))
     return render_template("index.html", user=session, active_tab="dashboard")
 
 
@@ -493,6 +510,11 @@ def student_dashboard():
 @login_required()
 def student_announcements():
     """Dedicated Student Announcements View."""
+    user = load_authenticated_user_session()
+    if not user:
+        return redirect(url_for("login_page"))
+    if user.get("role") == "Admin":
+        return redirect(url_for("admin_dashboard"))
     return render_template("index.html", user=session, active_tab="announcements")
 
 
@@ -500,6 +522,11 @@ def student_announcements():
 @login_required()
 def student_events():
     """Dedicated Student Events View."""
+    user = load_authenticated_user_session()
+    if not user:
+        return redirect(url_for("login_page"))
+    if user.get("role") == "Admin":
+        return redirect(url_for("admin_dashboard"))
     return render_template("index.html", user=session, active_tab="events")
 
 
@@ -507,6 +534,11 @@ def student_events():
 @login_required()
 def student_registrations():
     """Dedicated Student Event Registrations View."""
+    user = load_authenticated_user_session()
+    if not user:
+        return redirect(url_for("login_page"))
+    if user.get("role") == "Admin":
+        return redirect(url_for("admin_dashboard"))
     return render_template("index.html", user=session, active_tab="registrations")
 
 
@@ -514,6 +546,11 @@ def student_registrations():
 @login_required()
 def student_tickets():
     """Dedicated Student Problem Tickets View."""
+    user = load_authenticated_user_session()
+    if not user:
+        return redirect(url_for("login_page"))
+    if user.get("role") == "Admin":
+        return redirect(url_for("admin_dashboard"))
     return render_template("index.html", user=session, active_tab="tickets")
 
 
@@ -521,6 +558,11 @@ def student_tickets():
 @login_required()
 def student_profile():
     """Dedicated Student Profile View."""
+    user = load_authenticated_user_session()
+    if not user:
+        return redirect(url_for("login_page"))
+    if user.get("role") == "Admin":
+        return redirect(url_for("admin_dashboard"))
     return render_template("index.html", user=session, active_tab="profile")
 
 
@@ -529,6 +571,9 @@ def student_profile():
 @login_required(allowed_roles=["Admin"])
 def admin_dashboard():
     """Admin Hub with CCTV Damage Review, Worker Management CRUD, and Review Log."""
+    user = load_authenticated_user_session()
+    if not user or user.get("role") != "Admin":
+        return redirect(url_for("login_page"))
     return render_template("admin.html", user=session, active_tab="dashboard")
 
 
@@ -536,6 +581,9 @@ def admin_dashboard():
 @login_required(allowed_roles=["Admin"])
 def admin_announcements():
     """Dedicated Admin Announcements & Broadcast View."""
+    user = load_authenticated_user_session()
+    if not user or user.get("role") != "Admin":
+        return redirect(url_for("login_page"))
     return render_template("admin.html", user=session, active_tab="announcements")
 
 
@@ -543,6 +591,9 @@ def admin_announcements():
 @login_required(allowed_roles=["Admin"])
 def admin_events():
     """Dedicated Admin Events & RSVP Roster View."""
+    user = load_authenticated_user_session()
+    if not user or user.get("role") != "Admin":
+        return redirect(url_for("login_page"))
     return render_template("admin.html", user=session, active_tab="events")
 
 
@@ -550,6 +601,9 @@ def admin_events():
 @login_required(allowed_roles=["Admin"])
 def admin_users():
     """Dedicated Admin User Management View."""
+    user = load_authenticated_user_session()
+    if not user or user.get("role") != "Admin":
+        return redirect(url_for("login_page"))
     return render_template("admin.html", user=session, active_tab="users")
 
 
@@ -557,6 +611,9 @@ def admin_users():
 @login_required(allowed_roles=["Admin"])
 def admin_tickets():
     """Dedicated Admin Problem Tickets & Worker Directory View."""
+    user = load_authenticated_user_session()
+    if not user or user.get("role") != "Admin":
+        return redirect(url_for("login_page"))
     return render_template("admin.html", user=session, active_tab="tickets")
 
 
@@ -564,6 +621,9 @@ def admin_tickets():
 @login_required(allowed_roles=["Admin"])
 def admin_profile():
     """Dedicated Admin Profile & Permissions View."""
+    user = load_authenticated_user_session()
+    if not user or user.get("role") != "Admin":
+        return redirect(url_for("login_page"))
     return render_template("admin.html", user=session, active_tab="profile")
 
 

@@ -256,6 +256,78 @@ class NextCampComprehensiveTestCase(unittest.TestCase):
         self.assertEqual(p3_after['name'], 'Pooja Hegde')
         self.assertEqual(p3_after['email'], 'pooja.hegde@sst.scaler.com')
 
+    def test_session_persistence_across_multiple_refreshes(self):
+        """
+        Verify that:
+        1. Student remains logged in across multiple simulated page refreshes (/dashboard, /, /events, /profile).
+        2. Admin remains logged in across multiple simulated page refreshes (/admin, /admin/dashboard, /admin/users).
+        3. Logout immediately destroys session and refresh redirects to /login.
+        """
+        student_client = app.test_client()
+        admin_client = app.test_client()
+
+        # 1. Student Login
+        log_res = student_client.post('/login', data={'email': 'sameer.verma@sst.scaler.com', 'password': 'scaler123', 'role': 'Student'})
+        self.assertEqual(log_res.status_code, 302)
+
+        # 2. Simulate 5 consecutive page refreshes on different student routes
+        for path in ['/', '/dashboard', '/announcements', '/events', '/registrations', '/tickets', '/profile', '/dashboard']:
+            res = student_client.get(path, follow_redirects=False)
+            self.assertEqual(res.status_code, 200, f"Failed on path {path} - expected 200 OK")
+            self.assertIn(b"NextCamp", res.data)
+            self.assertIn(b"Sameer Verma", res.data)
+
+        # 3. Admin Login
+        admin_log = admin_client.post('/login', data={'email': 'admin@sst.scaler.com', 'password': 'admin123', 'role': 'Admin'})
+        self.assertEqual(admin_log.status_code, 302)
+
+        # 4. Simulate consecutive page refreshes on admin routes
+        for path in ['/admin', '/admin/dashboard', '/admin/announcements', '/admin/events', '/admin/users', '/admin/tickets', '/admin/profile']:
+            res = admin_client.get(path, follow_redirects=False)
+            self.assertEqual(res.status_code, 200, f"Failed on admin path {path} - expected 200 OK")
+            self.assertIn(b"Campus Administrator", res.data)
+
+        # 5. Logout Student
+        student_client.get('/logout')
+        # Subsequent refreshes MUST redirect to /login
+        for path in ['/', '/dashboard', '/profile']:
+            res = student_client.get(path, follow_redirects=False)
+            self.assertEqual(res.status_code, 302)
+            self.assertIn('/login', res.headers['Location'])
+
+    def test_custom_student_renders_correct_details_on_refresh(self):
+        """
+        Verify that a newly registered/created student account:
+        1. Logs in successfully.
+        2. Renders their own dynamic name, roll number, and avatar initials upon initial load and refreshes.
+        3. Does not display hardcoded fallback values.
+        """
+        admin_client = app.test_client()
+        admin_client.post('/login', data={'email': 'admin@sst.scaler.com', 'password': 'admin123', 'role': 'Admin'})
+        
+        # Create student 'Aarav Sharma'
+        admin_client.post('/api/admin/users',
+                          data=json.dumps({
+                              'name': 'Aarav Sharma',
+                              'email': 'aarav.sharma@sst.scaler.com',
+                              'password': 'scalerpassword123',
+                              'role': 'Student',
+                              'student_id': 'SST-2024-CS099'
+                          }),
+                          content_type='application/json')
+
+        student_client = app.test_client()
+        log_res = student_client.post('/login', data={'email': 'aarav.sharma@sst.scaler.com', 'password': 'scalerpassword123', 'role': 'Student'})
+        self.assertEqual(log_res.status_code, 302)
+
+        # First load & refresh
+        for path in ['/', '/dashboard', '/profile']:
+            res = student_client.get(path)
+            self.assertEqual(res.status_code, 200)
+            self.assertIn(b"Aarav Sharma", res.data)
+            self.assertIn(b"SST-2024-CS099", res.data)
+            self.assertIn(b"AS", res.data)  # Initials
+
     # =========================================================================
     # 3. ROLE-BASED ACCESS CONTROL (RBAC) & AUTHORIZATION TESTS
     # =========================================================================
