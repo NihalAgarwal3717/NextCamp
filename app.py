@@ -11,7 +11,10 @@ app.secret_key = os.environ.get("SECRET_KEY", "nextcamp_secret_key_scaler_sst_20
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_NAME"] = "nextcamp_session"
-DB_PATH = os.environ.get("NEXTCAMP_DB", os.path.join(os.path.dirname(__file__), "nextcamp.db"))
+DB_PATH = os.environ.get(
+    "NEXTCAMP_DB",
+    "/tmp/nextcamp.db" if os.environ.get("VERCEL") else os.path.join(os.path.dirname(__file__), "nextcamp.db")
+)
 
 
 # ==============================================================================
