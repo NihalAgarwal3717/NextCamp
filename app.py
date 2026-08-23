@@ -1,5 +1,6 @@
 import os
 import random
+import shutil
 import sqlite3
 from datetime import datetime, timedelta
 from functools import wraps
@@ -12,10 +13,18 @@ app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_NAME"] = "nextcamp_session"
 app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=7)
-DB_PATH = os.environ.get(
-    "NEXTCAMP_DB",
-    "/tmp/nextcamp.db" if os.environ.get("VERCEL") else os.path.join(os.path.dirname(__file__), "nextcamp.db")
-)
+
+BUNDLED_DB = os.path.join(os.path.dirname(__file__), "nextcamp.db")
+if os.environ.get("VERCEL"):
+    DB_PATH = os.environ.get("NEXTCAMP_DB", "/tmp/nextcamp.db")
+    # On Vercel, copy bundled DB to writable /tmp on cold start if not already present
+    if DB_PATH == "/tmp/nextcamp.db" and not os.path.exists("/tmp/nextcamp.db") and os.path.exists(BUNDLED_DB):
+        try:
+            shutil.copyfile(BUNDLED_DB, "/tmp/nextcamp.db")
+        except Exception:
+            pass
+else:
+    DB_PATH = os.environ.get("NEXTCAMP_DB", BUNDLED_DB)
 
 
 # ==============================================================================
@@ -209,17 +218,20 @@ def init_db():
     if "created_at" not in ann_cols:
         cursor.execute("ALTER TABLE announcements ADD COLUMN created_at TEXT")
 
-    # Seed Default Users (Initial Baseline)
-    cursor.execute("SELECT COUNT(*) FROM users")
-    if cursor.fetchone()[0] == 0:
-        default_users = [
-            ("Sameer Verma", "sameer.verma@sst.scaler.com", generate_password_hash("scaler123"), "Student", "SST-2023-CS042", 1, "Good Standing 🟢", 0, 4.7, 94, "Tech Support Pro"),
-            ("Campus Administrator", "admin@sst.scaler.com", generate_password_hash("admin123"), "Admin", "SST-FACULTY-01", 1, "Good Standing 🟢", 0, 5.0, 100, "System Overseer")
-        ]
-        cursor.executemany("""
-            INSERT INTO users (name, email, password_hash, role, student_id, is_active, status, fine_amount, reputation, reputation_points, badge)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, default_users)
+    # Seed Baseline Users (Ensure Sameer, Admin, Nihal, sid exist)
+    baseline_users = [
+        ("Sameer Verma", "sameer.verma@sst.scaler.com", generate_password_hash("scaler123"), "Student", "SST-2023-CS042", 1, "Good Standing 🟢", 0, 4.7, 94, "Tech Support Pro"),
+        ("Campus Administrator", "admin@sst.scaler.com", generate_password_hash("admin123"), "Admin", "SST-FACULTY-01", 1, "Good Standing 🟢", 0, 5.0, 100, "System Overseer"),
+        ("Nihal Agarwal", "nihal@sst.scaler.com", generate_password_hash("scaler123"), "Student", "SST-2024", 1, "Good Standing 🟢", 0, 4.7, 94, "Tech Support Pro"),
+        ("sid", "sid@sst.scaler.com", generate_password_hash("scaler123"), "Student", "SST-2024", 1, "Good Standing 🟢", 0, 4.7, 94, "Tech Support Pro")
+    ]
+    for u in baseline_users:
+        cursor.execute("SELECT id FROM users WHERE LOWER(email) = LOWER(?)", (u[1],))
+        if not cursor.fetchone():
+            cursor.execute("""
+                INSERT INTO users (name, email, password_hash, role, student_id, is_active, status, fine_amount, reputation, reputation_points, badge)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, u)
 
     # Seed Default Workers
     cursor.execute("SELECT COUNT(*) FROM workers")
@@ -297,34 +309,11 @@ def get_request_data():
 # AUTHENTICATION & ROUTE PROTECTION HELPERS
 # ==============================================================================
 
-def login_required(allowed_roles=None):
-    """Decorator ensuring user is authenticated and matches required role."""
-    def decorator(f):
-        @wraps(f)
-        def decorated_function(*args, **kwargs):
-            is_api = request.path.startswith('/api/') or request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest"
-            
-            if 'user' not in session and 'user_id' not in session:
-                if is_api:
-                    return jsonify({"error": "Authentication required. Please log in."}), 401
-                return redirect(url_for('login_page', next=request.path))
-            
-            if allowed_roles:
-                user_role = session.get('role', 'Student')
-                if user_role not in allowed_roles:
-                    if is_api:
-                        return jsonify({"error": f"Access restricted. Role '{user_role}' cannot access this resource."}), 403
-                    flash(f"Access restricted. Role '{user_role}' cannot access this portal.", "error")
-                    if user_role == 'Admin':
-                        return redirect(url_for('admin_dashboard'))
-                    return redirect(url_for('student_dashboard'))
-            return f(*args, **kwargs)
-        return decorated_function
-    return decorator
-
-
 def load_authenticated_user_session():
-    """Helper that verifies and re-syncs the session against the SQLite database on every page load/refresh."""
+    """
+    Helper that verifies and re-syncs the session against the SQLite database on every page load/refresh.
+    Retrieves the fresh user record by user_id or email, without storing user in any global variable.
+    """
     user_id = session.get("user_id")
     email = session.get("email")
 
@@ -333,11 +322,16 @@ def load_authenticated_user_session():
 
     conn = get_db()
     cursor = conn.cursor()
+    row = None
     if user_id:
         cursor.execute("SELECT * FROM users WHERE id = ? AND is_active = 1", (user_id,))
-    else:
-        cursor.execute("SELECT * FROM users WHERE LOWER(email) = ? AND is_active = 1", (str(email).lower(),))
-    row = cursor.fetchone()
+        row = cursor.fetchone()
+
+    # Fallback to email lookup if user_id was missing or changed across instances
+    if not row and email:
+        cursor.execute("SELECT * FROM users WHERE LOWER(email) = LOWER(?) AND is_active = 1", (str(email).lower(),))
+        row = cursor.fetchone()
+
     conn.close()
 
     if not row:
@@ -358,6 +352,33 @@ def load_authenticated_user_session():
     session["status"] = user.get("status", "Good Standing 🟢")
     session["fine_amount"] = user.get("fine_amount", 0)
     return user
+
+
+def login_required(allowed_roles=None):
+    """Decorator ensuring user is authenticated and matches required role using fresh database verification."""
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            is_api = request.path.startswith('/api/') or request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest"
+            
+            user = load_authenticated_user_session()
+            if not user:
+                if is_api:
+                    return jsonify({"error": "Authentication required. Please log in."}), 401
+                return redirect(url_for('login_page', next=request.path))
+            
+            if allowed_roles:
+                user_role = user.get('role', 'Student')
+                if user_role not in allowed_roles:
+                    if is_api:
+                        return jsonify({"error": f"Access restricted. Role '{user_role}' cannot access this resource."}), 403
+                    flash(f"Access restricted. Role '{user_role}' cannot access this portal.", "error")
+                    if user_role == 'Admin':
+                        return redirect(url_for('admin_dashboard'))
+                    return redirect(url_for('student_dashboard'))
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
 
 
 # ==============================================================================
@@ -704,6 +725,7 @@ def get_student_profile():
 
 @app.route("/api/report-problem", methods=["POST"])
 @app.route("/api/tickets", methods=["POST"])
+@login_required()
 def report_problem():
     """
     Submitting a problem runs the smart allocation engine,
@@ -799,6 +821,7 @@ def resolve_ticket(ticket_id=None):
 
 
 @app.route("/api/submit-rating", methods=["POST"])
+@login_required()
 def submit_rating():
     """
     POST /api/submit-rating:

@@ -328,6 +328,42 @@ class NextCampComprehensiveTestCase(unittest.TestCase):
             self.assertIn(b"SST-2024-CS099", res.data)
             self.assertIn(b"AS", res.data)  # Initials
 
+    def test_baseline_students_nihal_and_sid_exist_and_persist_on_refresh(self):
+        """
+        Verify that pre-existing student accounts (Nihal Agarwal, sid) seeded in SQLite:
+        1. Can log in with their credentials.
+        2. Persist across page refreshes.
+        3. Do not get overwritten by Admin or Sameer.
+        """
+        nihal_client = app.test_client()
+        res_nihal = nihal_client.post('/login', data={'email': 'nihal@sst.scaler.com', 'password': 'scaler123', 'role': 'Student'})
+        self.assertEqual(res_nihal.status_code, 302)
+
+        # Refresh check
+        dash_res = nihal_client.get('/dashboard')
+        self.assertEqual(dash_res.status_code, 200)
+        self.assertIn(b"Nihal Agarwal", dash_res.data)
+
+        sid_client = app.test_client()
+        res_sid = sid_client.post('/login', data={'email': 'sid@sst.scaler.com', 'password': 'scaler123', 'role': 'Student'})
+        self.assertEqual(res_sid.status_code, 302)
+
+        # Refresh check
+        dash_sid = sid_client.get('/dashboard')
+        self.assertEqual(dash_sid.status_code, 200)
+        self.assertIn(b"sid", dash_sid.data)
+
+    def test_unauthenticated_ticket_and_rating_endpoints_rejected(self):
+        """
+        Verify that POST /api/tickets and POST /api/submit-rating reject unauthenticated callers (401).
+        """
+        unauth_client = app.test_client()
+        res_ticket = unauth_client.post('/api/tickets', data=json.dumps({"location": "Lab", "category": "IT"}), content_type='application/json')
+        self.assertEqual(res_ticket.status_code, 401)
+
+        res_rating = unauth_client.post('/api/submit-rating', data=json.dumps({"ticket_id": "TCK-1001", "quality": 5}), content_type='application/json')
+        self.assertEqual(res_rating.status_code, 401)
+
     # =========================================================================
     # 3. ROLE-BASED ACCESS CONTROL (RBAC) & AUTHORIZATION TESTS
     # =========================================================================
